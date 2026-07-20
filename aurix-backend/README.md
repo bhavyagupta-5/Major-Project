@@ -92,14 +92,4 @@ These are exclusively for **Divyansh** (AI Worker).
 
 ---
 
-##  5. Running the Backend Locally
-
-If you need to spin up the backend API on your own laptop to test your code:
-
-1. Clone this repository and open the `aurix-backend` folder.
-2. Run `npm install` to download dependencies.
-3. Ask Bhavya for the `.env` file credentials.
-4. Run `npm start` (or `node server.js`).
-5. The API will be available at `http://localhost:3000`.
-
 
