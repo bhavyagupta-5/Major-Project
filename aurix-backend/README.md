@@ -1,10 +1,10 @@
-# 🚀 AURIX Backend System Architecture
+#  AURIX Backend System Architecture
 
 Welcome to the **AURIX Backend Ecosystem**! This document is designed to help the Frontend (Bhumika), VS Code Extension (Divyanshi), and Core AI Engine (Divyansh) teams understand exactly how the backend layer operates, how data flows, and how to interact with the API endpoints.
 
 ---
 
-## 🏗️ 1. High-Level Architecture Overview
+##  1. High-Level Architecture Overview
 
 The backend acts as the central API Gateway and traffic controller for the entire AURIX platform. It is built on **Node.js + Express.js** and relies on two major cloud infrastructures:
 1. **Supabase (PostgreSQL + Auth + Storage + Vector)**: Acts as the primary database, identity provider, large file vault, and vector search engine.
@@ -34,7 +34,7 @@ graph TD
 
 ---
 
-## 🔄 2. Core Service Workflows
+##  2. Core Service Workflows
 
 ### Flow A: GitHub URL Ingestion
 When a user pastes a GitHub URL in the dashboard:
@@ -63,7 +63,7 @@ When the AI Worker needs context about a vulnerability (e.g., OWASP guidelines):
 
 ---
 
-## 📡 3. API Endpoints Map
+##  3. API Endpoints Map
 
 ### Public/Client Endpoints (Requires Supabase JWT)
 These are for **Bhumika** (Frontend) and **Divyanshi** (VS Code).
@@ -85,14 +85,14 @@ These are exclusively for **Divyansh** (AI Worker).
 
 ---
 
-## 🛡️ 4. Security & Maintenance Services
+##  4. Security & Maintenance Services
 
 * **Rate Limiter:** We use `express-rate-limit` backed by Redis to strictly limit users (e.g., 10 scans per hour) to prevent DDoS attacks and budget drain.
 * **Automated Data Sanitizer:** A `node-cron` job automatically runs inside the backend every hour. It scans the database for `COMPLETED` or `FAILED` scans and permanently deletes their `.zip` files from Supabase Storage to enforce strict privacy compliance.
 
 ---
 
-## 💻 5. Running the Backend Locally
+##  5. Running the Backend Locally
 
 If you need to spin up the backend API on your own laptop to test your code:
 
@@ -102,4 +102,4 @@ If you need to spin up the backend API on your own laptop to test your code:
 4. Run `npm start` (or `node server.js`).
 5. The API will be available at `http://localhost:3000`.
 
-*Built by Bhavya (Backend & Infrastructure Engineer)* 🚀
+
