@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURIX – Backend Interview Master Guide | Bhavya Gupta</title>
+  <meta name="description" content="Complete backend interview preparation guide for AURIX – an Agentic Unified Risk Intelligence Platform. Covers system architecture, RAG pipeline, LangGraph AI engine, and senior-level Q&A." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0b10;
+      --bg2: #111218;
+      --bg3: #16181f;
+      --border: rgba(255,255,255,0.07);
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --accent3: #f59e0b;
+      --green: #10b981;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --card: rgba(22,24,31,0.95);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    @media print {
+      body { background: #fff !important; color: #111 !important; font-size: 11pt; }
+      .no-print { display: none !important; }
+      .card { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; break-inside: avoid; }
+      .hero { background: #7c3aed !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .hero h1, .hero * { color: #fff !important; }
+      .qa-block { break-inside: avoid; }
+      h1, h2, h3, h4 { color: #1e293b !important; }
+      .chip { background: #e2e8f0 !important; color: #334155 !important; }
+      code, pre { background: #f1f5f9 !important; color: #1e293b !important; }
+      .section-label { color: #7c3aed !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .highlight-box { break-inside: avoid; }
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+    .hero {
+      background: linear-gradient(135deg, #1a0533 0%, #0f0a1e 30%, #050d1a 60%, #001a1a 100%);
+      padding: 70px 40px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.25) 0%, transparent 70%),
+                  radial-gradient(ellipse 50% 40% at 80% 80%, rgba(6,182,212,0.15) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.4);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #c4b5fd;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff 0%, #c4b5fd 40%, #67e8f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .hero-sub {
+      font-size: 18px;
+      color: #94a3b8;
+      max-width: 720px;
+      margin: 0 auto 36px;
+      position: relative;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+    }
+    .stat-icon { font-size: 22px; }
+    .stat-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-value { font-size: 16px; font-weight: 700; color: var(--text); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    .section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--accent2); margin-bottom: 8px; }
+    .section-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; color: var(--text); margin-bottom: 8px; }
+    .section-desc { color: var(--text2); max-width: 700px; margin-bottom: 40px; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 16px; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(124,58,237,0.12);
+      border: 1px solid rgba(124,58,237,0.25);
+      color: #c4b5fd;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .chip.cyan { background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.25); color: #67e8f9; }
+    .chip.amber { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fbbf24; }
+    .chip.green { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.25); color: #34d399; }
+    .chip.red { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
+
+    .badge { display: inline-block; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .badge-get { background: rgba(16,185,129,0.15); color: #34d399; }
+    .badge-post { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge-info { background: rgba(100,116,139,0.15); color: #94a3b8; }
+
+    pre, code { font-family: 'JetBrains Mono', monospace; }
+    .code-block {
+      background: #0d1117;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 20px 24px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #e2e8f0;
+      margin: 16px 0;
+    }
+    .code-block .kw { color: #c792ea; }
+    .code-block .str { color: #c3e88d; }
+    .code-block .fn { color: #82aaff; }
+    .code-block .cm { color: #546e7a; }
+    .code-block .cl { color: #ffcb6b; }
+    code { background: rgba(255,255,255,0.07); border-radius: 4px; padding: 2px 6px; font-size: 13px; color: #c4b5fd; }
+
+    .diagram-outer {
+      background: #070910;
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 20px;
+      padding: 32px 24px;
+      overflow-x: auto;
+      margin: 24px 0;
+    }
+    .diagram-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .flow-container { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 500px; }
+    .flow-row { display: flex; align-items: center; gap: 12px; width: 100%; justify-content: center; }
+    .flow-col { display: flex; flex-direction: column; align-items: center; }
+
+    .node-box {
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      min-width: 130px;
+      border: 1px solid;
+    }
+    .node-client { background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.4); color: #67e8f9; }
+    .node-api { background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.5); color: #c4b5fd; }
+    .node-redis { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+    .node-db { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
+    .node-ai { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.4); color: #fcd34d; }
+    .node-docker { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.4); color: #93c5fd; }
+
+    .flow-arrow-v {
+      width: 2px;
+      background: linear-gradient(to bottom, rgba(124,58,237,0.6), rgba(6,182,212,0.4));
+      height: 28px;
+      position: relative;
+    }
+    .flow-arrow-v::after {
+      content: '▼';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #7c3aed;
+    }
+    .flow-arrow-h {
+      height: 2px;
+      background: linear-gradient(to right, rgba(124,58,237,0.6), rgba(6,182,212,0.4));
+      min-width: 28px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .flow-arrow-h::after {
+      content: '▶';
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 9px;
+      color: #06b6d4;
+    }
+    .flow-label { font-size: 10px; color: var(--text3); text-align: center; margin: 4px 0; font-style: italic; }
+
+    .qa-block {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .qa-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 22px 24px 18px;
+    }
+    .qa-number {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, var(--accent), #5b21b6);
+      color: white;
+    }
+    .qa-question { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; line-height: 1.5; }
+    .qa-difficulty { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
+    .diff-senior { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .diff-mid { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .diff-entry { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+
+    .qa-body { padding: 0 24px 22px 76px; border-top: 1px solid var(--border); }
+    .qa-answer-label { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 1.5px; margin: 16px 0 10px; }
+    .qa-answer { color: #cbd5e1; font-size: 14px; line-height: 1.8; }
+    .qa-followup {
+      background: rgba(6,182,212,0.05);
+      border: 1px solid rgba(6,182,212,0.15);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .qa-followup-label { font-size: 11px; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+    .qa-followup-q { font-size: 13px; font-weight: 600; color: #67e8f9; margin-bottom: 6px; }
+    .qa-followup-a { font-size: 13px; color: #94a3b8; line-height: 1.7; }
+    .qa-key-point { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0; }
+    .qa-key-point::before { content: '→'; color: var(--accent); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+    .stack-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .stack-table th { background: rgba(124,58,237,0.15); color: #c4b5fd; text-align: left; padding: 12px 16px; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .stack-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+    .stack-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .stack-table td:first-child { color: var(--text); font-weight: 600; }
+
+    .timeline { position: relative; padding-left: 32px; }
+    .timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--accent), var(--accent2)); }
+    .tl-item { position: relative; margin-bottom: 28px; }
+    .tl-dot { position: absolute; left: -39px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 8px var(--accent); }
+    .tl-week { font-size: 11px; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+    .tl-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .tl-desc { font-size: 13px; color: var(--text2); }
+
+    .arch-layer { border-radius: 14px; padding: 20px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 16px; }
+    .arch-l1 { background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.2); }
+    .arch-l2 { background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.2); }
+    .arch-l3 { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); }
+    .arch-l4 { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); }
+    .arch-l5 { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); }
+    .arch-icon { font-size: 28px; flex-shrink: 0; }
+    .arch-content h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .arch-content p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.05));
+      border: 1px solid rgba(124,58,237,0.2);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+    .highlight-box.warning { background: rgba(245,158,11,0.05); border-color: rgba(245,158,11,0.25); border-left-color: var(--accent3); }
+    .highlight-box.success { background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.2); border-left-color: var(--green); }
+
+    .lg-nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 20px 0; }
+    .lg-node { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .lg-node-num { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .lg-node-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .lg-node-desc { font-size: 12px; color: var(--text2); }
+
+    .print-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 999;
+      background: linear-gradient(135deg, var(--accent), #5b21b6);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 30px rgba(124,58,237,0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .print-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124,58,237,0.5); }
+
+    .toc { background: var(--bg3); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 40px; }
+    .toc h3 { font-size: 14px; font-weight: 700; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin: 6px 0; }
+    .toc a { color: var(--accent2); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .toc a:hover { color: white; }
+
+    .schema-table { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+    .schema-header { background: rgba(124,58,237,0.2); padding: 10px 16px; font-weight: 700; font-size: 13px; color: #c4b5fd; }
+    .schema-row { display: grid; grid-template-columns: 1fr 120px 1fr; padding: 8px 16px; border-top: 1px solid var(--border); font-size: 12px; }
+    .col-name { color: var(--accent2); font-weight: 600; }
+    .col-type { color: var(--accent3); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .col-desc { color: var(--text3); }
+    .pk { color: var(--accent3); font-size: 10px; font-weight: 700; margin-left: 6px; }
+    .fk { color: var(--green); font-size: 10px; font-weight: 700; margin-left: 6px; }
+
+    .tip-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+    .tip-icon { font-size: 22px; flex-shrink: 0; }
+    .tip-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+    .tip-text strong { color: var(--text); }
+
+    .comp-row { display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; gap: 10px; margin-bottom: 8px; }
+    .comp-cell { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--text2); }
+    .comp-cell.header { background: rgba(124,58,237,0.1); border-color: rgba(124,58,237,0.25); font-weight: 700; color: #c4b5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .cat-header { margin: 32px 0 16px; font-size: 16px; font-weight: 700; color: var(--accent2); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+
+    footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 32px; text-align: center; color: var(--text3); font-size: 13px; }
+    footer strong { color: var(--accent2); }
+  </style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Export as PDF</button>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🛡️ Backend Intern Technical Interview</div>
+  <h1>AURIX Backend<br/>Interview Master Guide</h1>
+  <p class="hero-sub">
+    Complete preparation for your <strong>Flam AI</strong> backend intern interview — curated from your actual codebase, 
+    architecture docs, and system design decisions as Backend &amp; Infrastructure Engineer on Project AURIX.
+  </p>
+  <div class="hero-stats">
+    <div class="stat-pill">
+      <span class="stat-icon">🔥</span>
+      <div>
+        <div class="stat-label">Questions</div>
+        <div class="stat-value">31 Q&amp;As</div>
+      </div>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-icon">🏗️</span>
+      <div>
+        <div class="stat-label">Architecture</div>
+        <div class="stat-value">Full Diagrams</div>
+      </div>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-icon">⚡</span>
+      <div>
+        <div class="stat-label">Tech Stack</div>
+        <div class="stat-value">Node.js + AI</div>
+      </div>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-icon">🤖</span>
+      <div>
+        <div class="stat-label">AI Engine</div>
+        <div class="stat-value">LangGraph</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- TOC -->
+  <div style="padding-top: 48px;">
+    <div class="toc">
+      <h3>📋 Table of Contents</h3>
+      <ol>
+        <li><a href="#s1">Project Overview — What is AURIX?</a></li>
+        <li><a href="#s2">Complete Tech Stack Reference</a></li>
+        <li><a href="#s3">System Architecture &amp; Workflow Diagrams</a></li>
+        <li><a href="#s4">Database Schema Deep Dive</a></li>
+        <li><a href="#s5">AI Engine — LangGraph Pipeline</a></li>
+        <li><a href="#s6">Development Timeline (16 Weeks)</a></li>
+        <li><a href="#s7">Senior-Level Interview Q&amp;A (31 Questions)</a></li>
+        <li><a href="#s8">Flam AI Specific Questions</a></li>
+        <li><a href="#s9">Interview Tips &amp; Cheat Sheet</a></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 1: OVERVIEW ─── -->
+  <div class="section" id="s1">
+    <div class="section-label">Section 01</div>
+    <h2 class="section-title">Project Overview — What is AURIX?</h2>
+    <p class="section-desc">Your 30-second elevator pitch + complete project context for interviewers.</p>
+
+    <div class="highlight-box">
+      <strong>🎯 One-Liner:</strong> "AURIX is an Agentic Unified Risk Intelligence Platform — a cloud-native application security scanner that uses a multi-agent LangGraph AI pipeline to automatically detect, exploit, and patch vulnerabilities in source code."
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4 style="font-size: 14px; font-weight: 700; color: var(--accent2); margin-bottom: 10px;">🏷️ Full Project Title</h4>
+        <p style="font-size: 13px; color: var(--text2);">AURIX: An Agentic Unified Risk Intelligence Platform with Autonomous Detection and Remediation</p>
+      </div>
+      <div class="card">
+        <h4 style="font-size: 14px; font-weight: 700; color: var(--accent2); margin-bottom: 10px;">👤 Your Role</h4>
+        <p style="font-size: 13px; color: var(--text2);">Backend &amp; Infrastructure Engineer — Layer 2 API Gateway + RAG Vector Infrastructure + System Orchestration</p>
+      </div>
+      <div class="card">
+        <h4 style="font-size: 14px; font-weight: 700; color: var(--accent2); margin-bottom: 10px;">👥 Team Structure</h4>
+        <p style="font-size: 13px; color: var(--text2);"><strong>Bhavya</strong> — Backend &nbsp;|&nbsp; <strong>Divyansh</strong> — AI Engine &nbsp;|&nbsp; <strong>Bhumika</strong> — Frontend &nbsp;|&nbsp; <strong>Divyanshi</strong> — VS Code Ext</p>
+      </div>
+      <div class="card">
+        <h4 style="font-size: 14px; font-weight: 700; color: var(--accent2); margin-bottom: 10px;">📊 Project Scale</h4>
+        <p style="font-size: 13px; color: var(--text2);">16-week development. 4 microservices. Node.js API + Python AI on AWS EC2 + React UI + TypeScript VS Code Extension.</p>
+      </div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; font-size: 17px; font-weight: 700;">What the System Does — 5 Phases</h3>
+
+    <div class="arch-layer arch-l1">
+      <span class="arch-icon">📥</span>
+      <div class="arch-content">
+        <h4 style="color: #67e8f9;">1. Ingestion</h4>
+        <p>User submits a GitHub URL or .zip via React UI or VS Code Extension. Your API authenticates via JWT, creates a PENDING scan in PostgreSQL, and queues a Job Ticket in Redis. Returns 202 Accepted immediately.</p>
+      </div>
+    </div>
+    <div class="arch-layer arch-l3">
+      <span class="arch-icon">📚</span>
+      <div class="arch-content">
+        <h4 style="color: #fca5a5;">2. RAG Enrichment</h4>
+        <p>Before AI generates exploits, it calls your <code>/api/internal/threat-intel/search</code> endpoint. Your backend converts the vulnerability query into a 384-dim vector (HuggingFace all-MiniLM-L6-v2) and performs pgvector cosine similarity search against OWASP docs — returns top-3 chunks in under 500ms.</p>
+      </div>
+    </div>
+    <div class="arch-layer arch-l2">
+      <span class="arch-icon">🤖</span>
+      <div class="arch-content">
+        <h4 style="color: #c4b5fd;">3. AI Analysis (LangGraph)</h4>
+        <p>Python AI Worker polls Redis (BRPOP). Runs SAST tools (Bandit, Semgrep, Gitleaks) in Docker. Passes findings through LangGraph: Logic Agent (triage) → Red Agent (exploit) → Sandbox (verify, self-heal) → Blue Agent (patch).</p>
+      </div>
+    </div>
+    <div class="arch-layer arch-l4">
+      <span class="arch-icon">🔗</span>
+      <div class="arch-content">
+        <h4 style="color: #6ee7b7;">4. Webhook Resolution</h4>
+        <p>AI POSTs a structured JSON payload to your <code>/api/internal/webhook/scan-complete</code>. Your API validates, updates SCANS.status → COMPLETED, populates VERIFIED_VULNERABILITIES with every finding.</p>
+      </div>
+    </div>
+    <div class="arch-layer arch-l5">
+      <span class="arch-icon">📱</span>
+      <div class="arch-content">
+        <h4 style="color: #fcd34d;">5. Client Delivery</h4>
+        <p>React UI polls every 5 seconds. Once COMPLETED, downloads full report with severity ratings, CVSS scores, PoC exploits, and AI-generated patches. VS Code Extension injects red squiggly lines at exact file/line numbers.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 2: TECH STACK ─── -->
+  <div class="section" id="s2">
+    <div class="section-label">Section 02</div>
+    <h2 class="section-title">Complete Tech Stack Reference</h2>
+    <p class="section-desc">Know every technology deeply — why you chose it and what alternatives exist.</p>
+
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <table class="stack-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+            <th>Why This Choice</th>
+            <th>Alternative Considered</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API Runtime</td>
+            <td><span class="chip">Node.js</span> <span class="chip">Express.js</span></td>
+            <td>Non-blocking I/O — perfect for high-concurrency webhook + polling endpoints</td>
+            <td>Fastify (more perf), Python FastAPI</td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td><span class="chip cyan">PostgreSQL</span> via Supabase</td>
+            <td>ACID compliance, FK cascades, native pgvector extension for RAG</td>
+            <td>MongoDB (no native vector search)</td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td><span class="chip cyan">Supabase Auth</span> + JWT</td>
+            <td>Managed OAuth (Email+GitHub), built-in Row Level Security enforcement</td>
+            <td>Auth0, Firebase Auth</td>
+          </tr>
+          <tr>
+            <td>Queue</td>
+            <td><span class="chip red">Upstash Redis</span></td>
+            <td>Serverless Redis — no cold starts, perfect for async job queuing via LPUSH/BRPOP</td>
+            <td>BullMQ, AWS SQS, RabbitMQ</td>
+          </tr>
+          <tr>
+            <td>File Upload</td>
+            <td><span class="chip">multer</span> + Supabase Storage</td>
+            <td>Streaming multipart prevents memory spikes; 10MB limit enforced</td>
+            <td>AWS S3, Cloudinary</td>
+          </tr>
+          <tr>
+            <td>Rate Limiting</td>
+            <td><span class="chip">express-rate-limit</span> + Redis</td>
+            <td>Redis-backed limits work across multiple server instances</td>
+            <td>In-memory store (breaks in multi-instance)</td>
+          </tr>
+          <tr>
+            <td>Vector/RAG</td>
+            <td><span class="chip green">pgvector</span> + HuggingFace</td>
+            <td>No separate vector DB — cosine similarity in SQL; free Transformers.js</td>
+            <td>Pinecone, Chroma, Weaviate</td>
+          </tr>
+          <tr>
+            <td>AI Orchestration</td>
+            <td><span class="chip amber">LangGraph</span> + Groq</td>
+            <td>Stateful multi-agent cycles with conditional branching; Groq LPU for ultra-low latency</td>
+            <td>LangChain, CrewAI, AutoGen</td>
+          </tr>
+          <tr>
+            <td>SAST Tools</td>
+            <td><span class="chip">Bandit</span> <span class="chip">Semgrep</span> <span class="chip">Gitleaks</span></td>
+            <td>Dockerized execution for sandboxed, reproducible security scans</td>
+            <td>Snyk, CodeQL</td>
+          </tr>
+          <tr>
+            <td>Scheduling</td>
+            <td><span class="chip">node-cron</span></td>
+            <td>Hourly cleanup of .zip files post-scan to prevent Supabase storage bloat</td>
+            <td>Agenda, AWS Lambda scheduled events</td>
+          </tr>
+          <tr>
+            <td>Deployment</td>
+            <td><span class="chip">Render</span></td>
+            <td>Free tier with persistent Node.js server; env var injection; auto-deploys</td>
+            <td>Railway, Fly.io, Vercel (serverless)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 3: ARCHITECTURE ─── -->
+  <div class="section" id="s3">
+    <div class="section-label">Section 03</div>
+    <h2 class="section-title">System Architecture &amp; Workflow Diagrams</h2>
+    <p class="section-desc">Visual representations of the AURIX decoupled microservice architecture.</p>
+
+    <h3 style="margin-bottom: 16px; font-size: 17px; font-weight: 700;">Diagram 1: Full End-to-End Request Flow</h3>
+    <div class="diagram-outer">
+      <div class="diagram-title">AURIX — Decoupled Microservice Architecture</div>
+      <div class="flow-container">
+        <div class="flow-row">
+          <div class="flow-col">
+            <div class="node-box node-client">🌐 React UI<br/><small>(Bhumika)</small></div>
+          </div>
+          <div style="width: 60px; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 12px;">and/or</div>
+          <div class="flow-col">
+            <div class="node-box node-client">🔌 VS Code Ext<br/><small>(Divyanshi)</small></div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: center; margin: 6px 0;">
+          <div class="flow-col">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-label">① POST /api/scans (JWT Bearer Token)</div>
+          </div>
+        </div>
+        <div class="flow-row">
+          <div class="node-box node-api" style="min-width: 260px;">
+            ⚡ Node.js API Gateway (Bhavya)<br/>
+            <small>Express.js · JWT Auth · multer · Rate Limiter</small>
+          </div>
+        </div>
+        <div class="flow-row" style="margin-top: 10px; gap: 30px;">
+          <div class="flow-col">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-label">② Insert PENDING scan</div>
+            <div class="node-box node-db">🗄️ Supabase PostgreSQL<br/><small>pgvector · RLS · FK Cascades</small></div>
+          </div>
+          <div class="flow-col">
+            <div class="flow-arrow-v"></div>
+            <div class="flow-label">③ LPUSH Job Ticket</div>
+            <div class="node-box node-redis">📮 Upstash Redis<br/><small>aurix_scan_queue</small></div>
+          </div>
+        </div>
+        <div style="text-align: center; margin: 12px 0; font-size: 12px; color: #34d399; font-weight: 600;">
+          ④ Immediate 202 Accepted → scan_id returned to client
+        </div>
+        <div class="flow-col" style="align-items: center;">
+          <div class="flow-arrow-v"></div>
+          <div class="flow-label">⑤ BRPOP aurix_scan_queue (blocks 5s)</div>
+          <div class="node-box node-ai" style="min-width: 280px;">
+            🤖 Python AI Worker — AWS EC2 (Divyansh)<br/>
+            <small>LangGraph · Groq LLM · aurix_worker.py</small>
+          </div>
+        </div>
+        <div class="flow-row" style="margin-top: 12px; gap: 8px; flex-wrap: wrap; justify-content: center;">
+          <div class="node-box node-docker" style="min-width: 100px; font-size: 11px;">🐳 SAST Scan<br/><small>Bandit/Semgrep</small></div>
+          <div class="flow-arrow-h"></div>
+          <div class="node-box node-docker" style="min-width: 100px; font-size: 11px;">🧠 Logic Agent<br/><small>Triage</small></div>
+          <div class="flow-arrow-h"></div>
+          <div class="node-box node-docker" style="min-width: 100px; font-size: 11px;">⚔️ Red Agent<br/><small>Exploit PoC</small></div>
+          <div class="flow-arrow-h"></div>
+          <div class="node-box node-docker" style="min-width: 100px; font-size: 11px;">🧪 Sandbox<br/><small>Docker Verify</small></div>
+          <div class="flow-arrow-h"></div>
+          <div class="node-box node-docker" style="min-width: 100px; font-size: 11px;">🛡️ Blue Agent<br/><small>Patch Code</small></div>
+        </div>
+        <div style="text-align: center; margin: 8px 0; font-size: 11px; color: var(--accent2); font-style: italic;">
+          ⑥ AI → POST /api/internal/threat-intel/search → pgvector cosine similarity → OWASP context returned &lt;500ms
+        </div>
+        <div class="flow-col" style="align-items: center;">
+          <div class="flow-arrow-v"></div>
+          <div class="flow-label">⑦ POST /webhook/scan-complete (JSON Payload)</div>
+          <div class="node-box node-api" style="min-width: 240px;">⚡ Node.js API Gateway</div>
+          <div class="flow-arrow-v"></div>
+          <div class="flow-label">⑧ UPDATE SCANS → COMPLETED · INSERT VERIFIED_VULNERABILITIES</div>
+          <div class="node-box node-db" style="min-width: 200px;">🗄️ Supabase PostgreSQL</div>
+        </div>
+        <div style="text-align: center; margin: 12px 0; font-size: 12px; color: #fbbf24; font-weight: 600;">
+          ⑨ Client polls GET /api/scans/:id every 5s → Status: COMPLETED → Full report downloaded
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; font-size: 17px; font-weight: 700;">Diagram 2: API Endpoint Map</h3>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <table class="stack-table">
+        <thead>
+          <tr><th>Endpoint</th><th>Method</th><th>Auth</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/health</code></td>
+            <td><span class="badge badge-get">GET</span></td>
+            <td>None</td>
+            <td>Health check — returns <code>{ status: 'ok' }</code></td>
+          </tr>
+          <tr>
+            <td><code>/api/scans/github</code></td>
+            <td><span class="badge badge-post">POST</span></td>
+            <td>JWT + Rate Limit</td>
+            <td>GitHub URL → insert PENDING → LPUSH to Redis → 202 Accepted</td>
+          </tr>
+          <tr>
+            <td><code>/api/scans/upload</code></td>
+            <td><span class="badge badge-post">POST</span></td>
+            <td>JWT + Rate Limit</td>
+            <td>.zip (multer) → stream to Supabase Storage → LPUSH storage_path → 202</td>
+          </tr>
+          <tr>
+            <td><code>/api/scans/:scan_id</code></td>
+            <td><span class="badge badge-get">GET</span></td>
+            <td>JWT</td>
+            <td>Polling — returns scan status + full findings when COMPLETED</td>
+          </tr>
+          <tr>
+            <td><code>/api/internal/threat-intel/search</code></td>
+            <td><span class="badge badge-post">POST</span></td>
+            <td>Internal Token</td>
+            <td>384-dim embedding → pgvector cosine search → top-3 OWASP chunks</td>
+          </tr>
+          <tr>
+            <td><code>/api/internal/webhook/scan-complete</code></td>
+            <td><span class="badge badge-post">POST</span></td>
+            <td>Bearer Token</td>
+            <td>AI's full JSON → update SCANS → populate VERIFIED_VULNERABILITIES</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; font-size: 17px; font-weight: 700;">Diagram 3: Scan Status State Machine</h3>
+    <div class="diagram-outer">
+      <div class="diagram-title">Scan Lifecycle Transitions</div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;">
+        <div class="node-box" style="background: rgba(100,116,139,0.15); border-color: rgba(100,116,139,0.4); color: #94a3b8;">⭕ Request Received</div>
+        <div class="flow-arrow-h"></div>
+        <div class="node-box node-redis">⏳ PENDING<br/><small>DB created, job in Redis</small></div>
+        <div class="flow-arrow-h"></div>
+        <div class="node-box node-ai">🔄 SCANNING<br/><small>AI Worker processing</small></div>
+        <div class="flow-arrow-h"></div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="node-box node-db">✅ COMPLETED<br/><small>Webhook received</small></div>
+          <div class="node-box" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5;">❌ FAILED<br/><small>AI error/timeout</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 4: DB SCHEMA ─── -->
+  <div class="section" id="s4">
+    <div class="section-label">Section 04</div>
+    <h2 class="section-title">Database Schema Deep Dive</h2>
+    <p class="section-desc">The complete PostgreSQL relational schema you designed and implemented in Supabase.</p>
+
+    <div class="schema-table">
+      <div class="schema-header">👤 USERS (Supabase Auth managed)</div>
+      <div class="schema-row"><span class="col-name">id <span class="pk">PK</span></span><span class="col-type">UUID</span><span class="col-desc">Matches auth.uid() from JWT</span></div>
+      <div class="schema-row"><span class="col-name">email</span><span class="col-type">TEXT</span><span class="col-desc">Unique email from OAuth</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-header">📁 PROJECTS</div>
+      <div class="schema-row"><span class="col-name">id <span class="pk">PK</span></span><span class="col-type">UUID</span><span class="col-desc">Project UUID</span></div>
+      <div class="schema-row"><span class="col-name">user_id <span class="fk">FK</span></span><span class="col-type">UUID</span><span class="col-desc">→ USERS.id, ON DELETE CASCADE</span></div>
+      <div class="schema-row"><span class="col-name">name</span><span class="col-type">TEXT</span><span class="col-desc">Project display name</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-header">🔍 SCANS</div>
+      <div class="schema-row"><span class="col-name">id <span class="pk">PK</span></span><span class="col-type">UUID</span><span class="col-desc">This is the scan_id shared with clients</span></div>
+      <div class="schema-row"><span class="col-name">project_id <span class="fk">FK</span></span><span class="col-type">UUID</span><span class="col-desc">→ PROJECTS.id, ON DELETE CASCADE</span></div>
+      <div class="schema-row"><span class="col-name">user_id <span class="fk">FK</span></span><span class="col-type">UUID</span><span class="col-desc">→ USERS.id (used for RLS policy)</span></div>
+      <div class="schema-row"><span class="col-name">status</span><span class="col-type">TEXT</span><span class="col-desc">PENDING | SCANNING | COMPLETED | FAILED</span></div>
+      <div class="schema-row"><span class="col-name">summary</span><span class="col-type">JSONB</span><span class="col-desc">{ total_findings, neutralized_count }</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-header">🚨 VERIFIED_VULNERABILITIES</div>
+      <div class="schema-row"><span class="col-name">id <span class="pk">PK</span></span><span class="col-type">UUID</span><span class="col-desc">Vulnerability UUID</span></div>
+      <div class="schema-row"><span class="col-name">scan_id <span class="fk">FK</span></span><span class="col-type">UUID</span><span class="col-desc">→ SCANS.id, ON DELETE CASCADE</span></div>
+      <div class="schema-row"><span class="col-name">rule_id, category</span><span class="col-type">TEXT</span><span class="col-desc">e.g., "OWASP-A01", "Authentication"</span></div>
+      <div class="schema-row"><span class="col-name">severity, cvss</span><span class="col-type">TEXT, FLOAT</span><span class="col-desc">CRITICAL|HIGH|MEDIUM|LOW · 0.0–10.0</span></div>
+      <div class="schema-row"><span class="col-name">file, line</span><span class="col-type">TEXT, INT</span><span class="col-desc">Exact code location for IDE diagnostics</span></div>
+      <div class="schema-row"><span class="col-name">poc_script</span><span class="col-type">TEXT</span><span class="col-desc">AI-generated exploit code (Python/JS)</span></div>
+      <div class="schema-row"><span class="col-name">patch_code</span><span class="col-type">TEXT</span><span class="col-desc">AI-generated secure fix</span></div>
+      <div class="schema-row"><span class="col-name">ai_reasoning</span><span class="col-type">TEXT</span><span class="col-desc">Logic Agent's chain-of-thought</span></div>
+      <div class="schema-row"><span class="col-name">wargame_status</span><span class="col-type">TEXT</span><span class="col-desc">EXPLOITED | PATCHED | FAILED</span></div>
+      <div class="schema-row"><span class="col-name">verified</span><span class="col-type">BOOLEAN</span><span class="col-desc">Did sandbox execution confirm the exploit?</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-header">📚 KNOWLEDGE_BASE (RAG Vector Store)</div>
+      <div class="schema-row"><span class="col-name">id <span class="pk">PK</span></span><span class="col-type">UUID</span><span class="col-desc">Chunk UUID</span></div>
+      <div class="schema-row"><span class="col-name">content</span><span class="col-type">TEXT</span><span class="col-desc">OWASP markdown chunk (~300 words)</span></div>
+      <div class="schema-row"><span class="col-name">embedding</span><span class="col-type">vector(384)</span><span class="col-desc">HuggingFace all-MiniLM-L6-v2 embedding</span></div>
+      <div class="schema-row"><span class="col-name">source</span><span class="col-type">TEXT</span><span class="col-desc">Source doc (e.g., "OWASP-A01.md")</span></div>
+    </div>
+
+    <div class="highlight-box success">
+      <strong>🔒 Row Level Security:</strong> PostgreSQL enforces <code>USING (user_id = auth.uid())</code> on all scan/vulnerability queries. Data isolation is at the DB engine level — not just application code. No user can read another user's reports even if the JWT is stolen and replayed.
+    </div>
+  </div>
+
+  <!-- ─── SECTION 5: LANGGRAPH ─── -->
+  <div class="section" id="s5">
+    <div class="section-label">Section 05</div>
+    <h2 class="section-title">AI Engine — LangGraph Pipeline</h2>
+    <p class="section-desc">Your teammate Divyansh's AI Worker. Know this deeply — it's your strongest differentiator at a tech interview.</p>
+
+    <div class="highlight-box">
+      <strong>Why LangGraph?</strong> Unlike a simple LLM call, LangGraph creates a stateful, cyclic graph of AI agents. Nodes can loop back (self-healing), branch conditionally, and maintain shared typed state. This is production-grade AI orchestration, not just prompt engineering.
+    </div>
+
+    <h3 style="margin: 24px 0 12px; font-size: 16px; font-weight: 700;">AurixState — The Shared Brain</h3>
+    <div class="code-block">
+<span class="kw">class</span> <span class="cl">AurixState</span>(TypedDict):
+    workspace_path: <span class="cl">str</span>                        <span class="cm"># Local clone of the repo</span>
+    target_vulnerabilities: <span class="cl">List[Dict]</span>          <span class="cm"># Queue of raw SAST findings</span>
+    current_vuln: <span class="cl">Dict</span>                       <span class="cm"># Bug being actively processed</span>
+    analysis_context: <span class="cl">Dict</span>                   <span class="cm"># Code lines from ContextFetcher</span>
+    confidence_score: <span class="cl">float</span>                  <span class="cm"># Logic Agent certainty (0.0–1.0)</span>
+    is_exploitable: <span class="cl">bool</span>                     <span class="cm"># Triage result</span>
+    poc_script: <span class="cl">str</span>                          <span class="cm"># Red Agent's exploit code</span>
+    patch_code: <span class="cl">str</span>                          <span class="cm"># Blue Agent's fix</span>
+    wargame_status: <span class="cl">str</span>                      <span class="cm"># EXPLOITED | PATCHED | FAILED</span>
+    retries: <span class="cl">int</span>                             <span class="cm"># Self-healing retry counter</span>
+    last_error: <span class="cl">str</span>                          <span class="cm"># Sandbox stderr → fed back to AI</span>
+    verified_reports: <span class="cl">Annotated</span>[<span class="cl">List[Dict]</span>, operator.add]  <span class="cm"># Accumulates all results</span></div>
+
+    <h3 style="margin: 24px 0 12px; font-size: 16px; font-weight: 700;">Node Pipeline (7 Nodes)</h3>
+    <div class="lg-nodes">
+      <div class="lg-node">
+        <div class="lg-node-num">Node 1</div>
+        <div class="lg-node-title">🔀 Pop Next Vulnerability</div>
+        <div class="lg-node-desc">Dequeues from target_vulnerabilities. Resets retries to 0. Returns None when queue empty → triggers END of graph.</div>
+      </div>
+      <div class="lg-node">
+        <div class="lg-node-num">Node 2</div>
+        <div class="lg-node-title">📄 Fetch Context</div>
+        <div class="lg-node-desc">ContextFetcher reads actual source code around the vulnerability (file + line ±10 lines). Gives AI real code evidence.</div>
+      </div>
+      <div class="lg-node">
+        <div class="lg-node-num">Node 3</div>
+        <div class="lg-node-title">🧠 Logic Agent (Triage)</div>
+        <div class="lg-node-desc">Groq LLM analyzes evidence + OWASP context. Outputs confidence_score (0.0–1.0). If &lt;0.7 → skip as false positive. Prevents wasted exploit attempts.</div>
+      </div>
+      <div class="lg-node">
+        <div class="lg-node-num">Node 4</div>
+        <div class="lg-node-title">⚔️ Red Agent (Exploit)</div>
+        <div class="lg-node-desc">Attack agent. Uses OWASP RAG context + code to write a working PoC exploit script. Structured output via Pydantic with_structured_output().</div>
+      </div>
+      <div class="lg-node">
+        <div class="lg-node-num">Node 5</div>
+        <div class="lg-node-title">🧪 Sandbox Executor</div>
+        <div class="lg-node-desc">Runs PoC in Docker container (--rm, ephemeral). Captures stdout/stderr. Success → EXPLOITED. Failure → stderr stored in last_error → loop back to Red Agent.</div>
+      </div>
+      <div class="lg-node">
+        <div class="lg-node-num">Node 6</div>
+        <div class="lg-node-title">🛡️ Blue Agent (Patch)</div>
+        <div class="lg-node-desc">Defense agent. Generates secure fix using original code + OWASP remediation guidelines. Outputs patch_code ready for developer.</div>
+      </div>
+      <div class="lg-node">
+        <div class="lg-node-num">Node 7</div>
+        <div class="lg-node-title">📦 State Reducer</div>
+        <div class="lg-node-desc">Compiles full verified report. Annotated[List, operator.add] appends (not overwrites) to verified_reports. POSTs final payload to your webhook.</div>
+      </div>
+    </div>
+
+    <div class="highlight-box warning">
+      <strong>⚡ Self-Healing Loop:</strong> If Sandbox fails → graph loops back to Red Agent with last_error (Docker stderr). AI reads its own failure message ("NameError on line 3"), fixes the script, and retries — up to 3 times before marking FAILED. This is the "agentic" part of AURIX.
+    </div>
+  </div>
+
+  <!-- ─── SECTION 6: TIMELINE ─── -->
+  <div class="section" id="s6">
+    <div class="section-label">Section 06</div>
+    <h2 class="section-title">Your Development Timeline (16 Weeks)</h2>
+    <p class="section-desc">Narrate your journey — shows planning, execution ability, and technical growth.</p>
+
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-week">Weeks 1–2 · Foundation</div>
+        <div class="tl-title">Cloud Infrastructure + Auth + Schema</div>
+        <div class="tl-desc">Provisioned Supabase + Upstash Redis. Designed relational schema (4 tables, FK cascades). Configured JWT middleware and Row Level Security policies. Email + GitHub OAuth.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-week">Weeks 3–4 · Unblocking The Team</div>
+        <div class="tl-title">Mock API Server → Live Deployment</div>
+        <div class="tl-desc">Built mock Express endpoints returning hardcoded JSON per API contract. Deployed to Render live URL. Unblocked both Bhumika (React) and Divyanshi (VS Code Ext) to work in parallel. API-First development.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-week">Weeks 5–7 · Real Ingestion Logic</div>
+        <div class="tl-title">GitHub URL + Zip Upload + Redis Queue</div>
+        <div class="tl-desc">Replaced mocks. GitHub: DB insert → LPUSH → 202. Zip: multer streams multipart/form-data to Supabase Storage → LPUSH storage_path. GET polls Supabase live. Rate limiter added.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-week">Weeks 8–11 · RAG Vector Infrastructure</div>
+        <div class="tl-title">pgvector + HuggingFace Embeddings</div>
+        <div class="tl-desc">Enabled pgvector. Created knowledge_base table with vector(384). Built seed_rag.js: OWASP docs → all-MiniLM-L6-v2 embeddings → Supabase insert. Built similarity search RPC: cosine similarity in &lt;500ms.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-week">Weeks 12–13 · AI Integration</div>
+        <div class="tl-title">Webhook + Data Resolution</div>
+        <div class="tl-desc">Built internal webhook endpoint. Parsed AI JSON payload, updated SCANS.status, iterated findings into VERIFIED_VULNERABILITIES. Used supabaseAdmin (service role) to bypass RLS for background tasks.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-week">Weeks 14–15 · Security + Reliability</div>
+        <div class="tl-title">Rate Limiting + Cron Cleanup</div>
+        <div class="tl-desc">Redis-backed rate limiting (10 scans/hour). node-cron hourly job deletes .zip files after scan completion — prevents storage bloat, ensures code privacy.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot"></div>
+        <div class="tl-week">Week 16 · Launch</div>
+        <div class="tl-title">E2E Testing + Production Deploy</div>
+        <div class="tl-desc">Wrote E2E test_suite.js. Fixed PostgreSQL case-sensitivity table name bugs. Final production deploy on Render with secrets via environment variables. RAG latency verified &lt;500ms.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 7: Q&A ─── -->
+  <div class="section" id="s7">
+    <div class="section-label">Section 07</div>
+    <h2 class="section-title">Senior-Level Interview Q&amp;A</h2>
+    <p class="section-desc">31 questions curated from your AURIX codebase. Each has model answers + follow-up questions.</p>
+
+    <div class="cat-header">⚡ System Design &amp; Architecture</div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">1</div>
+        <div class="qa-question">Walk me through the full architecture of AURIX from a user clicking "Scan" to seeing vulnerability results.</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point">User submits a GitHub URL or .zip through the React UI with a JWT token in the Authorization header.</div>
+          <div class="qa-key-point">My Node.js API authenticates the JWT, creates a PENDING scan in PostgreSQL, and drops a Job Ticket (JSON with scan_id, url, user_id) into Upstash Redis via <code>LPUSH aurix_scan_queue</code>.</div>
+          <div class="qa-key-point">The API immediately returns <code>202 Accepted</code> with the scan_id — we never block waiting for a 2-3 minute AI process.</div>
+          <div class="qa-key-point">On AWS EC2, the Python AI Worker blocks on <code>BRPOP aurix_scan_queue 5</code>. It pops the job, clones the repo, and begins multi-stage scanning.</div>
+          <div class="qa-key-point">AI queries my <code>/threat-intel/search</code> endpoint for OWASP context via pgvector, runs SAST tools in Docker, then orchestrates the LangGraph pipeline: Logic Agent → Red Agent → Sandbox → Blue Agent.</div>
+          <div class="qa-key-point">When finished, AI POSTs JSON to my webhook. My API validates, updates scan to COMPLETED, populates VERIFIED_VULNERABILITIES.</div>
+          <div class="qa-key-point">Client polling every 5s detects COMPLETED → downloads full report.</div>
+        </div>
+        <div class="qa-followup">
+          <div class="qa-followup-label">🔁 Follow-Up Questions</div>
+          <div class="qa-followup-q">Q: Why 202 Accepted instead of 200 OK?</div>
+          <div class="qa-followup-a">202 is the semantically correct HTTP status for "request accepted, processing asynchronously." 200 implies work is done. 202 signals the client needs to poll for eventual completion.</div>
+          <div class="qa-followup-q" style="margin-top: 10px;">Q: What if the user closes the browser mid-scan?</div>
+          <div class="qa-followup-a">Nothing breaks. The scan continues independently. The scan_id is saved in their account. When they return, polling resumes and they see the completed results. This is the power of decoupling.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">2</div>
+        <div class="qa-question">Why did you use a Redis queue instead of calling the AI worker directly via HTTP?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Timeout Prevention:</strong> AI scanning takes 2-5 minutes. HTTP default timeouts are 30-60 seconds. A direct HTTP call fails before completion. Redis job tickets persist indefinitely.</div>
+          <div class="qa-key-point"><strong>Decoupling:</strong> My API doesn't need to know the AI worker's IP or availability. If the worker restarts or moves servers, it just reconnects to the same Redis queue. Zero API changes.</div>
+          <div class="qa-key-point"><strong>Resilience:</strong> If the AI worker crashes, the job stays in Redis. When it comes back online, it picks up exactly where it left off. With direct HTTP, the job is lost forever.</div>
+          <div class="qa-key-point"><strong>Backpressure:</strong> Queue acts as a buffer — 100 simultaneous scan requests queue up instead of 100 concurrent HTTP calls overwhelming the AI server.</div>
+        </div>
+        <div class="qa-followup">
+          <div class="qa-followup-label">🔁 Follow-Up Questions</div>
+          <div class="qa-followup-q">Q: Why LPUSH + BRPOP and not RPUSH + BLPOP?</div>
+          <div class="qa-followup-a">LPUSH pushes to left, BRPOP pops from right — this is FIFO. Earlier requests are processed first. LPUSH + BLPOP would be LIFO (stack) where newest requests jump the queue.</div>
+          <div class="qa-followup-q" style="margin-top: 10px;">Q: What's Upstash vs regular Redis?</div>
+          <div class="qa-followup-a">Upstash is serverless Redis — no server to manage, no idle costs, auto-scales. Regular Redis on EC2 requires uptime management, backups, and scaling. Upstash is ideal for free-tier project constraints.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">3</div>
+        <div class="qa-question">Explain your RAG pipeline in detail — seeding, querying, and injection.</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Seeding Phase:</strong> <code>seed_rag.js</code> parses OWASP Cheat Sheets into ~300-word markdown chunks. Each chunk is passed through HuggingFace's <code>all-MiniLM-L6-v2</code> (via Transformers.js in Node.js) to generate a 384-dimensional embedding. Vectors + text are inserted into the <code>knowledge_base</code> table with pgvector extension enabled.</div>
+          <div class="qa-key-point"><strong>Query Phase:</strong> AI worker sends vulnerability description to my <code>/threat-intel/search</code> endpoint as a 384-dim vector. My backend executes a Supabase RPC running: <code>SELECT content FROM knowledge_base ORDER BY embedding &lt;=&gt; $1 LIMIT 3</code>. Returns top-3 most similar OWASP chunks in &lt;500ms.</div>
+          <div class="qa-key-point"><strong>Injection Phase:</strong> The Logic Agent receives these OWASP chunks in its system prompt. Now grounded in real remediation guidelines — it knows what OWASP-A03 SQL Injection looks like, how to exploit it, and how to patch it. No hallucinations about security guidelines.</div>
+        </div>
+        <div class="qa-followup">
+          <div class="qa-followup-label">🔁 Follow-Up Questions</div>
+          <div class="qa-followup-q">Q: What does the &lt;=&gt; operator mean in pgvector?</div>
+          <div class="qa-followup-a">Cosine distance operator. <code>a &lt;=&gt; b</code> = 1 - cosine_similarity(a, b). Ordering ascending gives most similar vectors first. We chose cosine over Euclidean (&lt;-&gt;) because it's magnitude-independent — better for text embeddings of varying lengths.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">4</div>
+        <div class="qa-question">Why did you use a Webhook for AI results instead of giving the AI direct database access?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Security:</strong> The AI worker executes untrusted, malicious code in Docker sandboxes. Giving a node running attacker code direct DB credentials is catastrophic. A compromised worker could exfiltrate all user data.</div>
+          <div class="qa-key-point"><strong>Separation of Concerns:</strong> My API is the single point of trust for all DB writes. All inserts go through my validation logic — I ensure payload schema matches, scan_id is valid, user exists.</div>
+          <div class="qa-key-point"><strong>Auditability:</strong> Every AI result passes through a known endpoint. I can log, monitor, and add schema validation at one central point. Direct DB access would be invisible.</div>
+          <div class="qa-key-point"><strong>API as Firewall:</strong> Webhook requires a Bearer token (<code>aurix-dev-token</code>). In production, this would be HMAC-SHA256 signature verification — like how GitHub webhooks work.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">5</div>
+        <div class="qa-question">How does your security architecture prevent users from accessing each other's reports?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Layer 1 — JWT Middleware:</strong> Every <code>/api/scans/*</code> request passes through <code>requireAuth</code>. Validates JWT signature, extracts user.id. Expired/malformed/missing → 401 immediately.</div>
+          <div class="qa-key-point"><strong>Layer 2 — PostgreSQL RLS:</strong> Database policy: <code>USING (user_id = auth.uid())</code>. Every SELECT/UPDATE/DELETE auto-filters at DB engine level. This isn't application code — PostgreSQL itself rejects cross-user queries.</div>
+          <div class="qa-key-point"><strong>Layer 3 — FK Cascades:</strong> Scan records have user_id FK. Schema physically prevents orphaned or misdirected records. ON DELETE CASCADE ensures complete data cleanup.</div>
+        </div>
+        <div class="qa-followup">
+          <div class="qa-followup-label">🔁 Follow-Up Questions</div>
+          <div class="qa-followup-q">Q: Why use supabaseAdmin for the webhook and not the regular client?</div>
+          <div class="qa-followup-a">The webhook is a server-to-server call with no user JWT. Regular Supabase client would have RLS block all DB writes (no authenticated user). supabaseAdmin uses the service role key, bypassing RLS. It's safe because it's only used in trusted internal endpoints, never user-facing routes.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">🔧 Node.js &amp; Backend Fundamentals</div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">6</div>
+        <div class="qa-question">How did you handle large .zip file uploads without crashing Node.js?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Problem:</strong> Buffering a 10MB file entirely in memory on a single-threaded server blocks the event loop. 10 concurrent uploads = 100MB RAM — crashes a 512MB Render free tier.</div>
+          <div class="qa-key-point"><strong>multer with memoryStorage:</strong> Configured with a 10MB hard limit (<code>limits: { fileSize: 10 * 1024 * 1024 }</code>). Files exceeding this are rejected before they hit memory.</div>
+          <div class="qa-key-point"><strong>Streaming to Storage:</strong> multer gives me <code>req.file.buffer</code>. I stream this directly to Supabase Storage. Data flows: Client → multer → Supabase Storage. Never accumulates fully in RAM.</div>
+          <div class="qa-key-point"><strong>Cron Cleanup:</strong> node-cron runs hourly to delete zip files for COMPLETED/FAILED scans — preventing storage accumulation over time.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">7</div>
+        <div class="qa-question">How does your rate limiter work correctly across multiple server instances?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>The Problem with In-Memory:</strong> If 3 Render instances each have their own counter, a user can make 10 requests to each — 30 total, bypassing a 10/hour limit. In-memory is per-process, not global.</div>
+          <div class="qa-key-point"><strong>Redis-Backed Solution:</strong> <code>express-rate-limit</code> with <code>rate-limit-redis</code> as the store. Every request increments a Redis key keyed by IP. All server instances share the same Upstash Redis cluster → globally consistent counter.</div>
+          <div class="qa-key-point"><strong>Config:</strong> 10 scan requests per hour per IP. Returns <code>429 Too Many Requests</code> with descriptive message when exceeded. Headers: <code>draft-7</code> standardHeaders.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">8</div>
+        <div class="qa-question">What happens if the AI worker crashes mid-scan? Is the user stuck forever?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Current Behavior:</strong> AI catches internal errors and sends a FAILED payload to my webhook. Scan shows as FAILED in the UI.</div>
+          <div class="qa-key-point"><strong>Gap — Total Server Failure:</strong> If AWS EC2 loses power before the webhook fires, the scan stays PENDING forever. User waits indefinitely.</div>
+          <div class="qa-key-point"><strong>My Planned Fix:</strong> Background cron job every 15 minutes. Query for scans PENDING for over 15 minutes → auto-mark as FAILED with "Scan timed out." This is the "dead letter sweep" pattern used in production queue systems.</div>
+          <div class="qa-key-point"><strong>Better Alternative:</strong> Redis Streams with consumer groups — provide at-least-once delivery with acknowledgment. If a consumer dies without ACK, the message gets re-assigned to another consumer.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">9</div>
+        <div class="qa-question">Why polling over WebSockets for real-time status updates?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Simplicity for Long-Running Tasks:</strong> WebSockets maintain persistent connections. For a 2-3 minute task, that's 2-3 minutes of open socket per user — expensive on free-tier servers with limited concurrency.</div>
+          <div class="qa-key-point"><strong>Stateless Architecture:</strong> Polling is stateless — any server instance can handle any GET. WebSockets require sticky sessions (user always hits same server) or Redis pub/sub to broadcast across instances.</div>
+          <div class="qa-key-point"><strong>Pragmatic Trade-off:</strong> Polling adds ~5s result latency. In production, I'd upgrade to Server-Sent Events backed by Redis pub/sub. When webhook fires, publish to Redis channel keyed by scan_id. API pushes SSE event to connected client — sub-second notification.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">10</div>
+        <div class="qa-question">How did you manage environment variables and secrets across local dev and production?</div>
+        <div class="qa-difficulty diff-entry">ENTRY</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Local:</strong> <code>dotenv</code> package with a <code>.env</code> file in the project root. Contains SUPABASE_URL, SUPABASE_SERVICE_KEY, UPSTASH_REDIS_URL, WEBHOOK_SECRET_TOKEN. File is in <code>.gitignore</code> — never committed.</div>
+          <div class="qa-key-point"><strong>Production (Render):</strong> Secrets injected as environment variables in the Render dashboard. Encrypted at rest, injected at runtime as <code>process.env</code> — identical API to dotenv, no file on disk.</div>
+          <div class="qa-key-point"><strong>Zero Hardcoding:</strong> If the webhook secret rotates, change one env var. No hunting through codebase for hardcoded strings. This is standard 12-factor app methodology.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">🗄️ Database &amp; PostgreSQL</div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">11</div>
+        <div class="qa-question">How did you design database relationships? What happens when a user deletes their account?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Hierarchy:</strong> USER → (many) PROJECTS → (many) SCANS → (many) VERIFIED_VULNERABILITIES. 4-level relational tree.</div>
+          <div class="qa-key-point"><strong>ON DELETE CASCADE on every FK:</strong> User deletion propagates automatically through all 4 levels in a single atomic transaction. Zero manual cleanup code needed.</div>
+          <div class="qa-key-point"><strong>Why not SET NULL?</strong> Orphaned scans (user_id = NULL) are security risks — unclaimed sensitive data in the DB. CASCADE guarantees complete data sovereignty for users (GDPR-aligned).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">12</div>
+        <div class="qa-question">What is pgvector and why did you choose it over a dedicated vector database?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>pgvector:</strong> PostgreSQL extension adding <code>vector(N)</code> data type and similarity operators (<code>&lt;=&gt;</code> cosine, <code>&lt;-&gt;</code> Euclidean, <code>&lt;#&gt;</code> inner product). Store + query high-dimensional vectors natively in SQL.</div>
+          <div class="qa-key-point"><strong>Why not Pinecone/Chroma:</strong> 1) Cost — Pinecone's free tier has vector limits. 2) Complexity — another service to monitor and authenticate. 3) Latency — additional network hop per RAG query. pgvector lives in our existing Supabase DB — RAG queries are just SQL, no extra network hop.</div>
+          <div class="qa-key-point"><strong>Limitation at Scale:</strong> pgvector with full table scan is O(n). Fine for AURIX's scale (&lt;10K OWASP chunks). At millions of vectors, add HNSW index (<code>CREATE INDEX USING hnsw (embedding vector_cosine_ops)</code>) for O(log n) ANN search — pgvector supports this natively.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">13</div>
+        <div class="qa-question">What is a Supabase RPC and why did you use it for similarity search?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>What is an RPC:</strong> A PostgreSQL function defined in SQL, invokable via the Supabase JS client like an API call. Runs on the DB server, not application server.</div>
+          <div class="qa-key-point"><strong>Why for similarity search:</strong> The pgvector operator (<code>embedding &lt;=&gt; $1 LIMIT 3</code>) isn't expressible via Supabase's standard ORM. An RPC lets me write raw SQL and call it cleanly: <code>supabase.rpc('search_similar_docs', { query_embedding: [...] })</code>.</div>
+          <div class="qa-key-point"><strong>Performance:</strong> Sort, limit, and return all happen inside PostgreSQL — no round-trip for intermediate data. Consistent sub-500ms response even on free tier.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">🤖 AI &amp; LangGraph</div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">14</div>
+        <div class="qa-question">What is LangGraph and how does it differ from a simple LLM API call?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Simple LLM Call:</strong> Stateless and linear. One prompt → one response. Retry means starting from scratch. No branching, no state accumulation.</div>
+          <div class="qa-key-point"><strong>LangGraph:</strong> Defines a directed graph of AI nodes sharing typed state (AurixState TypedDict). Edges can be conditional — "if confidence &gt; 0.7 → Red Agent, else skip." Graph can loop back — if exploit fails, retry with error feedback. This enables self-healing.</div>
+          <div class="qa-key-point"><strong>Key Innovation — Annotated[List, operator.add]:</strong> verified_reports uses this special annotation so each node's output is APPENDED to the list, not replaced. This is how AURIX accumulates all verified bugs across an entire multi-vulnerability scan without losing previous results.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">15</div>
+        <div class="qa-question">What is the self-healing mechanism in the AI pipeline?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Problem:</strong> LLMs sometimes generate syntactically invalid exploit scripts. Naive retry gives the same broken script. Discarding means missing real vulnerabilities.</div>
+          <div class="qa-key-point"><strong>Self-Healing Loop:</strong> Sandbox Executor runs PoC in Docker, captures stderr. If execution fails, LangGraph loops back to Red Agent, injecting <code>last_error</code> (the Docker stderr) into the prompt. AI reads "NameError: 'requests' not defined" and fixes its own code. Up to 3 retries before FAILED.</div>
+          <div class="qa-key-point"><strong>Why Docker for Sandbox:</strong> Executing arbitrary AI-generated exploit code on the host machine is catastrophic. Docker containers are ephemeral (<code>--rm</code>) and isolated. No access to host filesystem or network beyond what the image allows.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">16</div>
+        <div class="qa-question">What SAST tools does AURIX use and what does each detect?</div>
+        <div class="qa-difficulty diff-entry">ENTRY</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Bandit:</strong> Python SAST. Detects insecure library usage (eval(), SQL injection via string concat, subprocess.shell=True, hardcoded passwords). LOW/MEDIUM/HIGH output.</div>
+          <div class="qa-key-point"><strong>Semgrep:</strong> Language-agnostic AST pattern matching. Runs OWASP security rules against code's Abstract Syntax Tree. More precise than regex — understands code structure, not just text.</div>
+          <div class="qa-key-point"><strong>Gitleaks:</strong> Scans git history for exposed secrets — API keys, AWS credentials, JWT secrets, database passwords. Catches hardcoded credentials (OWASP-A07).</div>
+          <div class="qa-key-point"><strong>Why multiple tools?</strong> Each has different false positive/negative rates covering different vulnerability classes. AURIX deduplicates by file:line:title signature to maximize coverage while minimizing noise.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">🔌 Microservices &amp; Integration</div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">17</div>
+        <div class="qa-question">How did you manage the API contract between your Node.js backend and the Python AI worker?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>JSON Contract Documents:</strong> Wrote DIVYANSH_INTEGRATION_ROADMAP.md defining exact JSON schemas for the Redis job ticket AND the webhook payload — every field, type, and example value. This was the single source of truth across both languages.</div>
+          <div class="qa-key-point"><strong>Pydantic Enforcement:</strong> Required Divyansh to use <code>with_structured_output()</code> on the LLM, forcing AI output to match the exact schema. Prevents LLM from hallucinating field names like "severity_level" instead of "severity."</div>
+          <div class="qa-key-point"><strong>verified_report.json:</strong> A canonical example JSON file both sides reference. My webhook validates incoming data against this schema before any DB writes.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">18</div>
+        <div class="qa-question">How did you unblock your teammates while the real backend was still in development?</div>
+        <div class="qa-difficulty diff-entry">ENTRY</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Mock API First:</strong> In weeks 3-4, before real DB/Redis logic, I created mock Express endpoints returning hardcoded JSON matching the exact API contract schema. Deployed to Render with a live public URL.</div>
+          <div class="qa-key-point"><strong>Result:</strong> Bhumika built the entire React frontend against real HTTP endpoints. Divyanshi built VS Code extension. Both worked in parallel without waiting for my implementation.</div>
+          <div class="qa-key-point"><strong>API-First Development:</strong> Lock the schema → deploy mocks → parallel development. When I replaced mocks with real logic, nothing broke because the schema was unchanged from day 1. This is industry-standard API-first development.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">19</div>
+        <div class="qa-question">What is the Docker-out-of-Docker problem and how did AURIX solve it?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>The Problem:</strong> When the AI worker itself runs inside Docker (production deployment), it tries to spin up child Docker containers for the sandbox. It uses <code>docker run -v "/app/workspace/repo:/src"</code> — but this path is the container's internal path, not the host's. The Docker daemon (on the host) can't find it → volume mount fails.</div>
+          <div class="qa-key-point"><strong>Solution in engine.py:</strong> Check <code>HOST_WORKSPACE_DIR</code> environment variable. If running inside Docker, construct the volume mount using the host machine's actual directory path (injected at deploy time), not the container's internal path.</div>
+          <div class="qa-key-point"><strong>Standard Alternative:</strong> Mount Docker socket (<code>/var/run/docker.sock</code>) into the container — allows child container creation using host Docker daemon. But requires careful security consideration since it grants near-host-level access.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">⚡ Performance, Scalability &amp; Node.js Internals</div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">20</div>
+        <div class="qa-question">What are the main bottlenecks in AURIX and how would you solve them at scale?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Single AI Worker:</strong> One Python process handles all jobs serially. Solution: Multiple AI worker instances (horizontal scaling) all reading from the same Redis queue. BRPOP's atomic pop guarantees each job is claimed by exactly one worker.</div>
+          <div class="qa-key-point"><strong>pgvector Full Scan:</strong> Cosine similarity on full table is O(n). Solution: Add HNSW index for approximate nearest neighbor — O(log n) lookups.</div>
+          <div class="qa-key-point"><strong>Polling Load:</strong> 1000 concurrent users × every 5s = 200 req/s. Solution: Replace with SSE + Redis pub/sub. Webhook publishes to Redis channel keyed by scan_id → API pushes SSE event to connected client.</div>
+          <div class="qa-key-point"><strong>Render Free Tier:</strong> 512MB RAM, spins down after 15min. Solution: Upgrade to paid tier or AWS ECS/Fargate with auto-scaling.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">21</div>
+        <div class="qa-question">Why is Node.js good for I/O-heavy tasks but bad for CPU-heavy tasks?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Single-Threaded Event Loop:</strong> Node.js runs on one thread, using async I/O. While waiting for a DB query, it processes other requests. Perfect for high-concurrency API servers that spend most time waiting (I/O-bound).</div>
+          <div class="qa-key-point"><strong>Bad for CPU:</strong> CPU operations (ML inference, image processing, crypto) block the event loop — no other requests are processed while it's running. That's why we offloaded AI scanning to Python, which can use multi-threading and dedicated CPU resources.</div>
+          <div class="qa-key-point"><strong>In AURIX:</strong> My Node.js API is perfect — accepting HTTP, writing to DB, pushing to Redis, returning responses. All I/O. The heavy CPU/AI work goes to the Python worker designed for it.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">22</div>
+        <div class="qa-question">What is middleware in Express.js and how did you use it?</div>
+        <div class="qa-difficulty diff-entry">ENTRY</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>What is Middleware:</strong> Functions that execute in the request-response cycle, in order. Each gets (req, res, next). Calls <code>next()</code> to continue, or <code>res.send()</code> to stop the chain.</div>
+          <div class="qa-key-point"><strong>In AURIX (in order):</strong> 1) <code>cors()</code> — allows cross-origin requests from React UI. 2) <code>express.json()</code> — parses JSON bodies. 3) <code>requireAuth</code> — validates JWT, attaches req.user to all /api/scans/* routes. 4) <code>scanRateLimiter</code> — enforces 10/hour limit on POST scan routes. 5) <code>multer.single('source_code')</code> — handles file upload on the zip route.</div>
+          <div class="qa-key-point"><strong>Order Matters:</strong> If requireAuth runs before express.json(), req.body is undefined. Middleware order in Express is critical — a subtle bug that's easy to miss.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">💬 Behavioral &amp; Project Questions</div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">23</div>
+        <div class="qa-question">Tell me about a technical challenge you faced in AURIX and how you solved it.</div>
+        <div class="qa-difficulty diff-entry">ENTRY</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer (STAR format)</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Situation:</strong> When deploying to production on Render, the API returned 500 errors on all database queries even though code was identical to local dev.</div>
+          <div class="qa-key-point"><strong>Task:</strong> Debug why the Supabase client was failing on tables that worked locally.</div>
+          <div class="qa-key-point"><strong>Action:</strong> Added detailed logging to every DB call. Discovered PostgreSQL throwing a case-sensitivity error — my code was querying "SCANS" but the table was created as "scans". PostgreSQL is case-sensitive for quoted identifiers. Ran a global search, standardized all table references to lowercase.</div>
+          <div class="qa-key-point"><strong>Result:</strong> Fixed in under 2 hours. Added a note to the team about lowercase table naming convention. Documented in the DEVELOPMENT_LOG for future developers.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">24</div>
+        <div class="qa-question">How did you coordinate across Node.js, Python, React, and TypeScript teams?</div>
+        <div class="qa-difficulty diff-entry">ENTRY</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>API Contract First:</strong> Before writing a line of backend code, I defined exact JSON schemas for every interface point. These became the single source of truth.</div>
+          <div class="qa-key-point"><strong>Mock Server:</strong> Deployed live mock API immediately so teammates could build UIs without waiting for my implementation.</div>
+          <div class="qa-key-point"><strong>Language-Agnostic Contracts:</strong> JSON doesn't care about implementation language. Pydantic on Python side enforces type safety. Manual validation on Node.js side. Integration was just swapping mocks for real logic.</div>
+          <div class="qa-key-point"><strong>Integration Roadmaps:</strong> Wrote personalized guides for each teammate with code examples in their language — no ambiguity about what to send or expect.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">25</div>
+        <div class="qa-question">What would you do differently if you were building AURIX again from scratch?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>WebSockets from Day 1:</strong> 5-second polling creates noticeable UX latency. I'd implement SSE with Redis pub/sub from the beginning — one-time complexity cost, permanent UX improvement.</div>
+          <div class="qa-key-point"><strong>Dead Letter Queue Immediately:</strong> The PENDING timeout sweep is a one-hour implementation that prevents users from waiting forever on crashed jobs. Should have been in Week 1.</div>
+          <div class="qa-key-point"><strong>TypeScript for the API:</strong> JavaScript's dynamic typing caused runtime bugs that TypeScript would have caught at compile time — especially type mismatches between webhook payload and DB schema.</div>
+          <div class="qa-key-point"><strong>Webhook HMAC Verification:</strong> The current hardcoded Bearer token works but isn't cryptographically secure. I'd implement HMAC-SHA256 signature verification (like GitHub Webhooks) to guarantee payload integrity.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 8: FLAM AI SPECIFIC ─── -->
+  <div class="section" id="s8">
+    <div class="section-label">Section 08</div>
+    <h2 class="section-title">Flam AI Specific Questions</h2>
+    <p class="section-desc">Questions tailored to an AI-focused startup backend internship. Show you understand AI infrastructure at scale.</p>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">26</div>
+        <div class="qa-question">How would you design a scalable backend for an AI-heavy application like Flam?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Decouple API from AI Compute:</strong> Exactly like AURIX — the HTTP API handles auth, validation, queuing. AI compute in separate, independently scalable workers. Never block your API with LLM inference.</div>
+          <div class="qa-key-point"><strong>Message Queue:</strong> Redis/SQS for low-to-medium scale, Kafka for high scale. Queue absorbs burst traffic and provides backpressure control.</div>
+          <div class="qa-key-point"><strong>Streaming Responses:</strong> For real-time AI (LLM text generation), use SSE to stream tokens as they generate. Don't wait for full response — users see tokens appear like ChatGPT.</div>
+          <div class="qa-key-point"><strong>RAG for Grounding:</strong> Build a vector knowledge base for domain-specific context. Dramatically improves quality and reduces hallucinations.</div>
+          <div class="qa-key-point"><strong>Observability:</strong> Log every AI call with latency, token count, and cost. AI compute is expensive — visibility into spend is critical for a startup.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">27</div>
+        <div class="qa-question">What's the difference between RAG and fine-tuning? When would you use each?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>RAG:</strong> At query time, fetch relevant docs from a vector DB, inject into LLM context. Model is unchanged. Good for: frequently updated data (security databases, news), factual Q&A, source citations needed. Low maintenance — just re-embed new docs.</div>
+          <div class="qa-key-point"><strong>Fine-Tuning:</strong> Update model weights on custom dataset. Knowledge baked into model. Good for: specific tone/style, consistent output formats, internalized reasoning patterns. Expensive — requires GPU compute and large labeled datasets.</div>
+          <div class="qa-key-point"><strong>In AURIX:</strong> RAG, because OWASP knowledge base updates frequently (new CVEs constantly). Fine-tuning would require retraining on every new vulnerability. RAG just needs a new embedding.</div>
+          <div class="qa-key-point"><strong>For Flam:</strong> If task is content with Flam's brand voice → fine-tune. If answering questions about evolving product catalog → RAG.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">28</div>
+        <div class="qa-question">How would you implement streaming LLM responses in a Node.js API?</div>
+        <div class="qa-difficulty diff-mid">MID</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>SSE Headers:</strong> Set <code>Content-Type: text/event-stream</code>, <code>Cache-Control: no-cache</code>, <code>Connection: keep-alive</code>. Keep connection open, write chunks as they arrive.</div>
+          <div class="qa-key-point"><strong>Streaming from LLM:</strong> Call Groq/OpenAI with <code>stream: true</code>. SDK returns async iterator. For each chunk: <code>res.write(`data: ${JSON.stringify({token: delta.content})}\n\n`)</code>.</div>
+          <div class="qa-key-point"><strong>Termination:</strong> When stream ends, write <code>data: [DONE]\n\n</code> sentinel and call <code>res.end()</code>. Client uses EventSource API or fetch with ReadableStream to process chunks.</div>
+          <div class="qa-key-point"><strong>Groq advantage:</strong> Groq uses LPU (Language Processing Unit) hardware — delivers tokens 10x faster than GPU. For real-time streaming, this matters enormously for user experience.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">29</div>
+        <div class="qa-question">What is a CVSS score and how does AURIX calculate it?</div>
+        <div class="qa-difficulty diff-entry">ENTRY</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>CVSS:</strong> Common Vulnerability Scoring System. Industry-standard 0.0–10.0 score. 9.0–10.0 = Critical, 7.0–8.9 = High, 4.0–6.9 = Medium, 0.1–3.9 = Low. Used by NIST, CVE databases, and all major security vendors.</div>
+          <div class="qa-key-point"><strong>AURIX Approach:</strong> engine.py checks raw_cvss from the SAST tool first — if it exists and is &gt; 0, use it directly. If not, apply heuristic mapping: CRITICAL → 9.5, HIGH → 8.0, MEDIUM → 5.5, LOW → 2.5, INFO → 1.0.</div>
+          <div class="qa-key-point"><strong>Why it matters:</strong> CVSS drives vulnerability prioritization in the Triage Kanban board. Engineers tackle CRITICAL (9.5) before LOW (2.5). It's the data driving triage workflow decisions.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">30</div>
+        <div class="qa-question">How would you add observability/monitoring to the AURIX backend?</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>Structured Logging:</strong> Replace <code>console.error</code> with a structured logger (Winston/Pino). Every request logged with: timestamp, route, user_id, scan_id, latency, status code. Machine-readable JSON — queryable in Datadog/Grafana.</div>
+          <div class="qa-key-point"><strong>Request Tracing:</strong> Generate a unique trace_id per request (crypto.randomUUID). Pass it in headers to Redis job ticket and to the AI worker. When webhook fires, include the same trace_id. Now you can trace one scan's journey across all 4 microservices.</div>
+          <div class="qa-key-point"><strong>Metrics:</strong> Track: queue depth (how many jobs pending), scan duration histogram, RAG query latency (p50/p95/p99), webhook success/failure rate, rate limiter hits. Expose via <code>/metrics</code> endpoint for Prometheus scraping.</div>
+          <div class="qa-key-point"><strong>Alerting:</strong> Alert if queue depth &gt; 50 for &gt; 5min (AI worker down?), RAG p99 &gt; 1s (pgvector needs indexing?), webhook error rate &gt; 5% (schema mismatch with AI?).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-header">
+        <div class="qa-number">31</div>
+        <div class="qa-question">Explain the Pydantic structured_output() pattern and why it's critical for AURIX.</div>
+        <div class="qa-difficulty diff-senior">SENIOR</div>
+      </div>
+      <div class="qa-body">
+        <div class="qa-answer-label">✅ Model Answer</div>
+        <div class="qa-answer">
+          <div class="qa-key-point"><strong>What is structured_output():</strong> A LangChain pattern that forces an LLM to output JSON matching a Pydantic model schema. The LLM is instructed to use function/tool calling to produce structured output, guaranteeing field names, types, and required fields.</div>
+          <div class="qa-key-point"><strong>Why critical for AURIX:</strong> The AI must produce output matching my exact webhook schema — specific field names like "severity" (not "severity_level"), "cvss" as a float (not a string), "verified" as a boolean. Any mismatch causes my webhook's DB insert to fail silently or crash.</div>
+          <div class="qa-key-point"><strong>Without it:</strong> The LLM might hallucinate field names, output severity as "Critical" (capitalized) instead of "CRITICAL" (all caps), or miss required fields like scan_id. Pydantic validation at the Python layer catches these before they reach my API — preventing downstream database corruption.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 9: TIPS ─── -->
+  <div class="section" id="s9">
+    <div class="section-label">Section 09</div>
+    <h2 class="section-title">Interview Tips &amp; Quick Cheat Sheet</h2>
+    <p class="section-desc">Last-minute preparation strategies for Flam AI.</p>
+
+    <div class="card-grid" style="margin-bottom: 28px;">
+      <div class="tip-card"><span class="tip-icon">🎯</span><div class="tip-text"><strong>Lead with "Why":</strong> Don't just say what you built. "I used Redis instead of HTTP because AI takes 2-3 minutes and HTTP times out." Why = senior thinking.</div></div>
+      <div class="tip-card"><span class="tip-icon">📐</span><div class="tip-text"><strong>Draw Everything:</strong> When asked system design, draw Diagram 1. Label every arrow with protocol/command. Visual answers score higher.</div></div>
+      <div class="tip-card"><span class="tip-icon">⚡</span><div class="tip-text"><strong>Know Your Numbers:</strong> RAG &lt;500ms. Rate limit: 10/hour. File size: 10MB. BRPOP timeout: 5s. Polling: every 5s. Retry limit: 3. These make you credible.</div></div>
+      <div class="tip-card"><span class="tip-icon">🔄</span><div class="tip-text"><strong>Admit Gaps Proactively:</strong> "The current gap is the dead letter sweep. My fix would be a cron job sweeping for PENDING scans older than 15 minutes." Knowing gaps + solutions = maturity.</div></div>
+      <div class="tip-card"><span class="tip-icon">🏗️</span><div class="tip-text"><strong>Mention Alternatives:</strong> "We used pgvector instead of Pinecone because..." Evaluation → decision → rationale = senior engineer mindset.</div></div>
+      <div class="tip-card"><span class="tip-icon">🤖</span><div class="tip-text"><strong>Emphasize AI Architecture:</strong> Flam AI cares deeply about AI infra. Highlight LangGraph, RAG, self-healing loop, and Groq LPU usage. Signal you understand production AI systems.</div></div>
+    </div>
+
+    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 700;">⚡ 60-Second Architecture Pitch</h3>
+    <div class="highlight-box">
+      <em>"AURIX is a decoupled 4-service system. My Node.js API handles auth via JWT and Supabase Row Level Security, accepts scan requests, writes a PENDING record to PostgreSQL, and queues a job ticket to Upstash Redis — then immediately returns 202 Accepted. A Python AI Worker on AWS polls Redis via BRPOP, runs SAST tools in Docker, and orchestrates a LangGraph multi-agent pipeline. Agents query my pgvector RAG endpoint for OWASP context, generate exploits in a sandboxed Docker container, self-heal if they fail up to 3 times, and produce verified patches. Results come back via webhook. The client polls every 5 seconds — when it sees COMPLETED, it downloads the full report. End-to-end: roughly 2-3 minutes per scan."</em>
+    </div>
+
+    <h3 style="margin: 28px 0 16px; font-size: 16px; font-weight: 700;">🗂️ Numbers &amp; Key Facts Cheat Sheet</h3>
+    <div class="comp-row">
+      <div class="comp-cell header">Metric</div>
+      <div class="comp-cell header">Value</div>
+      <div class="comp-cell header">Context</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>RAG Query Latency</strong></div>
+      <div class="comp-cell">&lt;500ms</div>
+      <div class="comp-cell">pgvector cosine similarity, Supabase RPC</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>Embedding Dimensions</strong></div>
+      <div class="comp-cell">384</div>
+      <div class="comp-cell">all-MiniLM-L6-v2 via Transformers.js</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>Rate Limit</strong></div>
+      <div class="comp-cell">10/hour/IP</div>
+      <div class="comp-cell">Redis-backed, multi-instance safe</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>File Size Limit</strong></div>
+      <div class="comp-cell">10MB</div>
+      <div class="comp-cell">multer enforced before memory buffer</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>Poll Interval</strong></div>
+      <div class="comp-cell">5 seconds</div>
+      <div class="comp-cell">Client setInterval polling scan status</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>BRPOP Timeout</strong></div>
+      <div class="comp-cell">5 seconds</div>
+      <div class="comp-cell">Blocks for 5s to reduce network chatter</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>Self-Healing Retries</strong></div>
+      <div class="comp-cell">3 max</div>
+      <div class="comp-cell">Red Agent retries on sandbox stderr</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>Cron Frequency</strong></div>
+      <div class="comp-cell">Hourly</div>
+      <div class="comp-cell">Zip file cleanup from Supabase Storage</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>DB Tables</strong></div>
+      <div class="comp-cell">5</div>
+      <div class="comp-cell">USERS, PROJECTS, SCANS, VERIFIED_VULNS, KNOWLEDGE_BASE</div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell"><strong>Full Scan Duration</strong></div>
+      <div class="comp-cell">2–5 min</div>
+      <div class="comp-cell">Depends on repo size and vuln count</div>
+    </div>
+
+    <h3 style="margin: 28px 0 16px; font-size: 16px; font-weight: 700;">🔑 Questions to Ask the Interviewer</h3>
+    <div class="card">
+      <ul style="padding-left: 20px; color: var(--text2); font-size: 14px; line-height: 2.2;">
+        <li>How does Flam AI handle LLM inference latency at scale? Do you stream responses?</li>
+        <li>What does the backend infrastructure look like — microservices, monolith, or serverless?</li>
+        <li>How do you manage context windows for long AI conversations?</li>
+        <li>What observability tools do you use for monitoring AI pipeline performance and costs?</li>
+        <li>What's the biggest technical challenge the backend team is currently solving?</li>
+        <li>How does the team balance shipping features quickly with maintaining backend reliability?</li>
+      </ul>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<footer>
+  Prepared for <strong>Bhavya Gupta</strong> · Backend Intern Interview at <strong>Flam AI</strong> · Project AURIX
+  <br/>Built from actual codebase analysis · GitHub: bhavyagupta-5/Major-Project · August 2026
+  <br/><br/>
+  <em>Click "Export as PDF" button (top-right) → Save as PDF in your browser's print dialog</em>
+</footer>
+
+</body>
+</html>

