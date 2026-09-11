@@ -95,68 +95,7 @@ const getScanProgress = async (scanId) => {
 };
 
 const getRealisticFindings = (scanId, targetUrl) => {
-    return [
-        {
-            scan_id: scanId,
-            rule_id: 'python.sqlalchemy.security.sqlalchemy-execute-raw-query',
-            tool: 'opengrep',
-            category: 'Injection',
-            title: 'SQL Injection via Unsanitized Raw Query Execution',
-            description: 'Untrusted user input concatenated directly into raw SQL query can result in critical SQL Injection. The application executes user parameters without parameterization or escaping.',
-            severity: 'HIGH',
-            cvss: 8.8,
-            file_path: 'src/api/auth.py',
-            line_number: 42,
-            evidence: 'cursor.execute("SELECT id, username, role FROM users WHERE username = \'" + username + "\'")',
-            fix: 'Use parameterized queries: cursor.execute("SELECT id, username, role FROM users WHERE username = :username", {"username": username})',
-            verified: true,
-            wargame_status: 'Neutralized',
-            ai_reasoning: 'The AST analyzer detected direct string concatenation reaching an execute sink. Exploit payload \' OR 1=1 -- was simulated in the wargaming sandbox and successfully returned unauthorized records.',
-            poc_script: `import requests\n\ndef exploit_test(target_url):\n    payload = "' OR 1=1 --"\n    resp = requests.post(f"{target_url}/api/auth/login", json={"username": payload, "password": "x"})\n    if resp.status_code == 200:\n        print("[+] SQL Injection confirmed!")\n\nexploit_test("${targetUrl || 'http://localhost:8000'}")`,
-            patch_code: `--- a/src/api/auth.py\n+++ b/src/api/auth.py\n@@ -42,3 +42,3 @@\n-    query = "SELECT id, username, role FROM users WHERE username = '" + username + "'"\n-    cursor.execute(query)\n+    query = "SELECT id, username, role FROM users WHERE username = :username"\n+    cursor.execute(query, {"username": username})`,
-            is_resolved: false
-        },
-        {
-            scan_id: scanId,
-            rule_id: 'python.lang.security.deserialization.pickle.avoid-pickle',
-            tool: 'opengrep',
-            category: 'Insecure Deserialization',
-            title: 'Remote Code Execution via Insecure Python Pickle',
-            description: 'Deserialization of untrusted data using pickle allows arbitrary code execution on the host server.',
-            severity: 'CRITICAL',
-            cvss: 9.8,
-            file_path: 'src/services/session_cache.py',
-            line_number: 88,
-            evidence: 'session_data = pickle.loads(base64.b64decode(raw_cookie))',
-            fix: 'Replace pickle serialization with safe JSON or cryptographic session tokens (itsdangerous/jwt).',
-            verified: true,
-            wargame_status: 'Neutralized',
-            ai_reasoning: 'Pickle deserialization gadget chain executed __reduce__ in the isolated worker container. Wargame sandbox confirmed code execution capability.',
-            poc_script: `import pickle, base64, os\n\nclass RCE:\n    def __reduce__(self):\n        return (os.system, ('id',))\n\npayload = base64.b64encode(pickle.dumps(RCE())).decode()\nprint(f"Generated exploit token: {payload}")`,
-            patch_code: `--- a/src/services/session_cache.py\n+++ b/src/services/session_cache.py\n@@ -88,3 +88,3 @@\n-    import pickle\n-    session_data = pickle.loads(base64.b64decode(raw_cookie))\n+    import json\n+    session_data = json.loads(base64.b64decode(raw_cookie).decode('utf-8'))`,
-            is_resolved: false
-        },
-        {
-            scan_id: scanId,
-            rule_id: 'javascript.express.security.path-traversal',
-            tool: 'opengrep',
-            category: 'Path Traversal',
-            title: 'Arbitrary File Read via Path Traversal',
-            description: 'File path constructed from unvalidated user input enables attackers to read sensitive system files (e.g., /etc/passwd or .env).',
-            severity: 'MEDIUM',
-            cvss: 6.5,
-            file_path: 'src/controllers/reportController.js',
-            line_number: 67,
-            evidence: 'const filePath = path.join(__dirname, \'../reports/\', req.query.file);',
-            fix: 'Validate path using path.resolve and verify it resides within the allowed base directory.',
-            verified: true,
-            wargame_status: 'Neutralized',
-            ai_reasoning: 'Input parameter "file" accepted dot-dot-slash sequence "../../../etc/passwd". Sandbox verification confirmed file descriptor access.',
-            poc_script: `curl "http://localhost:3000/api/reports?file=../../../../etc/passwd"`,
-            patch_code: `--- a/src/controllers/reportController.js\n+++ b/src/controllers/reportController.js\n@@ -67,3 +67,5 @@\n+    const safeBase = path.resolve(__dirname, '../reports/');\n+    const targetPath = path.resolve(safeBase, req.query.file);\n+    if (!targetPath.startsWith(safeBase)) return res.status(403).json({ error: 'Access denied' });\n-    const filePath = path.join(__dirname, '../reports/', req.query.file);`,
-            is_resolved: false
-        }
-    ];
+    return [];
 };
 
 const triggerRealScanner = async (scanId, { project_id, github_url, storage_path, userId }) => {
@@ -206,7 +145,7 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
 
             const findings = getRealisticFindings(scanId, github_url);
 
-            if (isConfigured) {
+            if (isConfigured && findings.length > 0) {
                 try {
                     await supabaseAdmin
                         .from('verified_vulnerabilities')
