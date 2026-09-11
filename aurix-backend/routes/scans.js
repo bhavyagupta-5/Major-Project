@@ -31,9 +31,6 @@ const scanRateLimiter = rateLimit({
     message: { error: 'Too many scan requests, please try again after an hour' }
 });
 
-/**
- * POST /api/scans/github - Queue a GitHub repo for scanning
- */
 router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
     try {
         const { github_url, project_id } = req.body;
@@ -45,7 +42,6 @@ router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
 
         const scanId = crypto.randomUUID();
 
-        // 1. Try to record scan in database if configured
         let scan = { id: scanId, project_id, user_id: userId, status: 'PENDING' };
         if (isConfigured) {
             try {
@@ -68,7 +64,6 @@ router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
             }
         }
 
-        // Initialize progress tracker
         await updateScanProgress(scanId, {
             status: 'PENDING',
             progress: 0,
@@ -77,7 +72,6 @@ router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
             log: `[QUEUE] Received scan request for ${github_url}`
         });
 
-        // 2. Push to Redis queue if available
         let pushedToRedis = false;
         if (redis) {
             try {
@@ -95,8 +89,6 @@ router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
             }
         }
 
-        // 3. Fallback: Trigger Real Scanner directly if Redis is absent or background worker is offline
-        // This ensures scans NEVER stay stuck in PENDING forever!
         if (!pushedToRedis) {
             console.log(`[Scanner] Redis worker unavailable. Activating triggerRealScanner for ${scan.id}`);
             triggerRealScanner(scan.id, {
@@ -119,9 +111,6 @@ router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
     }
 });
 
-/**
- * POST /api/scans/upload - Upload a .zip file for scanning
- */
 router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'), async (req, res) => {
     try {
         const file = req.file;
@@ -135,7 +124,6 @@ router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'
         const scanId = crypto.randomUUID();
         const filePath = `${userId}/${scanId}.zip`;
 
-        // Upload to Supabase Storage if configured
         try {
             await supabaseAdmin
                 .storage
@@ -147,7 +135,6 @@ router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'
             console.warn('[Storage] Upload note (sandbox/mock fallback):', storageErr.message);
         }
 
-        // Insert scan record
         let scan = { id: scanId, project_id, user_id: userId, status: 'PENDING', storage_path: filePath };
         try {
             const { data: dbScan } = await supabaseAdmin
@@ -159,7 +146,6 @@ router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'
             if (dbScan) scan = dbScan;
         } catch (dbErr) {}
 
-        // Initialize progress tracker
         await updateScanProgress(scanId, {
             status: 'PENDING',
             progress: 0,
@@ -168,7 +154,6 @@ router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'
             log: `[UPLOAD] Received zip file ${file.originalname} (${(file.size / 1024).toFixed(1)} KB)`
         });
 
-        // Push to Redis or fallback to direct scanner
         let pushedToRedis = false;
         if (redis) {
             try {
@@ -204,9 +189,6 @@ router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'
     }
 });
 
-/**
- * GET /api/scans/:scan_id/progress - Polling endpoint for animated progress bar & live logs
- */
 router.get('/:scan_id/progress', async (req, res) => {
     try {
         const scanId = req.params.scan_id;
@@ -219,15 +201,11 @@ router.get('/:scan_id/progress', async (req, res) => {
     }
 });
 
-/**
- * GET /api/scans/:scan_id - Check scan status and fetch vulnerabilities
- */
 router.get('/:scan_id', requireAuth, async (req, res) => {
     try {
         const scanId = req.params.scan_id;
         const userId = req.user.id;
 
-        // Fetch scan from DB if configured
         let scan = null;
         if (isConfigured) {
             try {
@@ -241,7 +219,6 @@ router.get('/:scan_id', requireAuth, async (req, res) => {
             } catch (dbErr) {}
         }
 
-        // If not in DB, check progress store
         const progressInfo = await getScanProgress(scanId);
         const status = scan ? scan.status : (progressInfo.status || 'SCANNING');
 
@@ -254,7 +231,6 @@ router.get('/:scan_id', requireAuth, async (req, res) => {
             });
         }
 
-        // Fetch verified findings from DB if configured
         let findings = [];
         if (isConfigured) {
             try {
@@ -269,7 +245,6 @@ router.get('/:scan_id', requireAuth, async (req, res) => {
             } catch (fErr) {}
         }
 
-        // If no findings in DB yet completed, load realistic findings
         if (findings.length === 0 && status === 'COMPLETED') {
             findings = getRealisticFindings(scanId);
         }

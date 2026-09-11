@@ -4,20 +4,15 @@ const { supabaseAdmin, isConfigured } = require('../supabaseClient');
 const requireAuth = require('../middleware/auth');
 const { getRealisticFindings } = require('../services/scannerService');
 
-// In-memory findings cache for sandbox sessions
 const sandboxFindings = getRealisticFindings('b05c8ef4-e03b-4186-934f-bd6e5a1a4f75', 'https://github.com/stamparm/DSVW').map((f, idx) => ({
     ...f,
     id: f.id || `finding-${idx + 1}-${Date.now()}`
 }));
 
-/**
- * GET /api/findings/active - Returns all active/unresolved vulnerabilities
- */
 router.get('/active', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // Query database for unresolved vulnerabilities belonging to user's scans
         let findings = [];
         if (isConfigured) {
             try {
@@ -35,7 +30,6 @@ router.get('/active', requireAuth, async (req, res) => {
             }
         }
 
-        // If no findings found in DB (or in sandbox mode), return active sandbox findings
         if (findings.length === 0) {
             findings = sandboxFindings.filter(f => !f.is_resolved);
         }
@@ -50,14 +44,10 @@ router.get('/active', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * PATCH /api/findings/:id/resolve - Marks a finding as resolved
- */
 router.patch('/:id/resolve', requireAuth, async (req, res) => {
     try {
         const findingId = req.params.id;
 
-        // Try updating in Supabase DB if configured
         let updatedFinding = null;
         if (isConfigured) {
             try {
@@ -71,7 +61,6 @@ router.patch('/:id/resolve', requireAuth, async (req, res) => {
                 if (!error && data) {
                     updatedFinding = data;
 
-                    // Increment neutralized_count on parent scan
                     if (data.scan_id) {
                         const { data: scan } = await supabaseAdmin
                             .from('scans')
@@ -91,7 +80,6 @@ router.patch('/:id/resolve', requireAuth, async (req, res) => {
             }
         }
 
-        // Fallback: update in sandbox findings store
         const memoryFinding = sandboxFindings.find(f => f.id === findingId || f.rule_id === findingId);
         if (memoryFinding) {
             memoryFinding.is_resolved = true;

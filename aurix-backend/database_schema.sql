@@ -1,13 +1,6 @@
--- ==============================================================================
--- AURIX PostgreSQL Database Schema (Supabase)
--- ==============================================================================
-
--- 1. Enable pgvector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. PUBLIC PROFILES TABLE
--- Linked directly to Supabase auth.users
 CREATE TABLE IF NOT EXISTS PROFILES (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
@@ -19,7 +12,6 @@ CREATE TABLE IF NOT EXISTS PROFILES (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 3. PROJECTS TABLE
 CREATE TABLE IF NOT EXISTS PROJECTS (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -28,7 +20,6 @@ CREATE TABLE IF NOT EXISTS PROJECTS (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. SCANS TABLE
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'scan_status') THEN
@@ -50,7 +41,6 @@ CREATE TABLE IF NOT EXISTS SCANS (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 5. VERIFIED VULNERABILITIES TABLE
 CREATE TABLE IF NOT EXISTS VERIFIED_VULNERABILITIES (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     scan_id UUID REFERENCES SCANS(id) ON DELETE CASCADE,
@@ -75,7 +65,6 @@ CREATE TABLE IF NOT EXISTS VERIFIED_VULNERABILITIES (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 6. THREAT INTELLIGENCE (Vector Store) TABLE
 CREATE TABLE IF NOT EXISTS THREAT_INTELLIGENCE (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title TEXT,
@@ -84,16 +73,11 @@ CREATE TABLE IF NOT EXISTS THREAT_INTELLIGENCE (
     embedding VECTOR(384)
 );
 
--- ==============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- ==============================================================================
-
 ALTER TABLE PROFILES ENABLE ROW LEVEL SECURITY;
 ALTER TABLE PROJECTS ENABLE ROW LEVEL SECURITY;
 ALTER TABLE SCANS ENABLE ROW LEVEL SECURITY;
 ALTER TABLE VERIFIED_VULNERABILITIES ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
 DROP POLICY IF EXISTS "Users can view their own profile" ON PROFILES;
 CREATE POLICY "Users can view their own profile" ON PROFILES
     FOR SELECT USING (auth.uid() = id);
@@ -106,7 +90,6 @@ DROP POLICY IF EXISTS "Users can insert their own profile" ON PROFILES;
 CREATE POLICY "Users can insert their own profile" ON PROFILES
     FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Projects Policies
 DROP POLICY IF EXISTS "Users can view their own projects" ON PROJECTS;
 CREATE POLICY "Users can view their own projects" ON PROJECTS
     FOR SELECT USING (auth.uid() = user_id);
@@ -123,7 +106,6 @@ DROP POLICY IF EXISTS "Users can delete their own projects" ON PROJECTS;
 CREATE POLICY "Users can delete their own projects" ON PROJECTS
     FOR DELETE USING (auth.uid() = user_id);
 
--- Scans Policies
 DROP POLICY IF EXISTS "Users can view their own scans" ON SCANS;
 CREATE POLICY "Users can view their own scans" ON SCANS
     FOR SELECT USING (auth.uid() = user_id);
@@ -136,7 +118,6 @@ DROP POLICY IF EXISTS "Users can update their own scans" ON SCANS;
 CREATE POLICY "Users can update their own scans" ON SCANS
     FOR UPDATE USING (auth.uid() = user_id);
 
--- Verified Vulnerabilities Policies
 DROP POLICY IF EXISTS "Users can view their own vulnerabilities" ON VERIFIED_VULNERABILITIES;
 CREATE POLICY "Users can view their own vulnerabilities" ON VERIFIED_VULNERABILITIES
     FOR SELECT USING (
@@ -148,11 +129,6 @@ CREATE POLICY "Users can update their own vulnerabilities" ON VERIFIED_VULNERABI
     FOR UPDATE USING (
         scan_id IN (SELECT id FROM SCANS WHERE user_id = auth.uid())
     );
-
--- ==============================================================================
--- AUTOMATED USER REGISTRATION TRIGGER
--- Inserts a public profile whenever a user signs up or logs in via GitHub OAuth
--- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -180,10 +156,6 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- ==============================================================================
--- SIMILARITY SEARCH RPC FUNCTION
--- ==============================================================================
 
 CREATE OR REPLACE FUNCTION match_threat_intel (
   query_embedding vector(384),
@@ -213,9 +185,5 @@ BEGIN
   LIMIT match_count;
 END;
 $$;
-
--- ==============================================================================
--- RAG VECTOR READ PERMISSIONS (Requirement 9)
--- ==============================================================================
 
 GRANT ALL ON TABLE THREAT_INTELLIGENCE TO service_role, anon, authenticated;

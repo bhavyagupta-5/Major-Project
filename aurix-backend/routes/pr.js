@@ -5,9 +5,6 @@ const { supabaseAdmin } = require('../supabaseClient');
 const requireAuth = require('../middleware/auth');
 const { sandboxFindings } = require('./findings');
 
-/**
- * Helper to parse GitHub repo owner and name from standard URLs
- */
 function parseRepoUrl(url) {
     if (!url) return { owner: 'aurix-security', repo: 'target-repo' };
     const cleanUrl = url.replace(/\.git$/, '').replace(/\/$/, '');
@@ -18,9 +15,6 @@ function parseRepoUrl(url) {
     return { owner: 'aurix-security', repo: 'target-repo' };
 }
 
-/**
- * POST /api/pr/create - Automatically creates a GitHub Pull Request with the AI-generated security patch
- */
 router.post('/create', requireAuth, async (req, res) => {
     try {
         const { finding_id, repo_url, branch_name, pr_title, pr_body, github_token } = req.body;
@@ -29,7 +23,6 @@ router.post('/create', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Missing required parameter: finding_id' });
         }
 
-        // 1. Fetch finding details from DB or sandbox store
         let finding = null;
         try {
             const { data } = await supabaseAdmin
@@ -65,10 +58,8 @@ router.post('/create', requireAuth, async (req, res) => {
 
         const token = github_token || process.env.GITHUB_TOKEN;
 
-        // 2. If a GitHub Personal Access Token or OAuth token is provided, perform real GitHub API PR creation
         if (token && token !== 'your_github_token') {
             try {
-                // Fetch default branch
                 const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -81,7 +72,6 @@ router.post('/create', requireAuth, async (req, res) => {
                     const repoData = await repoResp.json();
                     const defaultBranch = repoData.default_branch || 'main';
 
-                    // Get ref SHA of default branch
                     const refResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${defaultBranch}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -94,7 +84,6 @@ router.post('/create', requireAuth, async (req, res) => {
                         const refData = await refResp.json();
                         const baseSha = refData.object.sha;
 
-                        // Create new branch
                         await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
                             method: 'POST',
                             headers: {
@@ -109,7 +98,6 @@ router.post('/create', requireAuth, async (req, res) => {
                             })
                         });
 
-                        // Create Pull Request
                         const prResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
                             method: 'POST',
                             headers: {
@@ -129,7 +117,6 @@ router.post('/create', requireAuth, async (req, res) => {
                         if (prResp.ok) {
                             const prData = await prResp.json();
 
-                            // Record PR URL in database
                             try {
                                 await supabaseAdmin
                                     .from('verified_vulnerabilities')
@@ -153,12 +140,10 @@ router.post('/create', requireAuth, async (req, res) => {
             }
         }
 
-        // 3. Fallback: Generate full GitHub Pull Request preview & direct branch compare link
         const simulatedPrNumber = Math.floor(10 + Math.random() * 90);
         const compareUrl = `https://github.com/${owner}/${repo}/compare/main...${patchBranch}?expand=1`;
         const prUrl = `https://github.com/${owner}/${repo}/pull/${simulatedPrNumber}`;
 
-        // Save PR URL to DB finding
         try {
             await supabaseAdmin
                 .from('verified_vulnerabilities')

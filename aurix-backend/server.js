@@ -13,7 +13,6 @@ const {
     getRealisticFindings
 } = require('./services/scannerService');
 
-// Route modules
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const scanRoutes = require('./routes/scans');
@@ -26,9 +25,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// ==============================================================================
-// Health Check Endpoint
-// ==============================================================================
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'ok',
@@ -39,32 +35,12 @@ app.get('/health', (req, res) => {
     });
 });
 
-// ==============================================================================
-// API Route Handlers
-// ==============================================================================
-// 1. Authentication Routes (/api/auth)
 app.use('/api/auth', authRoutes);
-
-// 2. Project Management Routes (/api/projects)
 app.use('/api/projects', projectRoutes);
-
-// 3. Scan & Ingestion Routes (/api/scans)
 app.use('/api/scans', scanRoutes);
-
-// 4. Vulnerability Findings Routes (/api/findings)
 app.use('/api/findings', findingsRoutes);
-
-// 5. Automated GitHub PR Remediation Routes (/api/pr)
 app.use('/api/pr', prRoutes);
 
-// ==============================================================================
-// Internal Worker Webhooks & RAG Threat Intel Endpoints
-// ==============================================================================
-
-/**
- * POST /api/internal/webhook/scan-progress
- * Scanner worker streams live step and percentage updates
- */
 app.post('/api/internal/webhook/scan-progress', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
@@ -96,10 +72,6 @@ app.post('/api/internal/webhook/scan-progress', async (req, res) => {
     }
 });
 
-/**
- * POST /api/internal/webhook/scan-complete
- * AI worker pushes verified findings and marks scan completed
- */
 app.post('/api/internal/webhook/scan-complete', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
@@ -172,10 +144,6 @@ app.post('/api/internal/webhook/scan-complete', async (req, res) => {
     }
 });
 
-/**
- * POST /api/internal/threat-intel/search
- * Cosine similarity search against pgvector THREAT_INTELLIGENCE table
- */
 app.post('/api/internal/threat-intel/search', async (req, res) => {
     try {
         const { query_embedding } = req.body;
@@ -199,9 +167,6 @@ app.post('/api/internal/threat-intel/search', async (req, res) => {
     }
 });
 
-// ==============================================================================
-// Automated Storage Sanitization Cron Job (Hourly)
-// ==============================================================================
 cron.schedule('0 * * * *', async () => {
     console.log('[Sanitizer] Running automated storage sanitization cron job...');
     try {
@@ -234,7 +199,6 @@ cron.schedule('0 * * * *', async () => {
     }
 });
 
-// Start listening if run directly
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`\n🚀 AURIX Backend API Gateway listening on port ${PORT}`);
@@ -247,6 +211,5 @@ if (require.main === module) {
     });
 }
 
-// Export app and scanner trigger function for direct integration and testing
 module.exports = app;
 module.exports.triggerRealScanner = triggerRealScanner;

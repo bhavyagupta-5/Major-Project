@@ -1,11 +1,7 @@
 const { supabaseAdmin, isConfigured } = require('../supabaseClient');
 
-// In-memory real-time progress store for low-latency frontend polling
 const scanProgressStore = new Map();
 
-/**
- * Record or update scan progress state
- */
 const updateScanProgress = async (scanId, { step, progress, current_file, log, status }) => {
     const existing = scanProgressStore.get(scanId) || {
         scan_id: scanId,
@@ -23,7 +19,6 @@ const updateScanProgress = async (scanId, { step, progress, current_file, log, s
             timestamp: new Date().toISOString(),
             message: log
         });
-        // Keep last 100 log lines
         if (newLogs.length > 100) newLogs.shift();
     }
 
@@ -39,7 +34,6 @@ const updateScanProgress = async (scanId, { step, progress, current_file, log, s
 
     scanProgressStore.set(scanId, updatedState);
 
-    // Sync progress to Supabase asynchronously only if configured
     if (isConfigured) {
         try {
             await supabaseAdmin
@@ -51,23 +45,17 @@ const updateScanProgress = async (scanId, { step, progress, current_file, log, s
                     updated_at: updatedState.updated_at
                 })
                 .eq('id', scanId);
-        } catch (err) {
-            // Silently continue if database sync fails
-        }
+        } catch (err) {}
     }
 
     return updatedState;
 };
 
-/**
- * Get current progress for a scan
- */
 const getScanProgress = async (scanId) => {
     if (scanProgressStore.has(scanId)) {
         return scanProgressStore.get(scanId);
     }
 
-    // Fallback: check Supabase DB
     try {
         const { data: scan } = await supabaseAdmin
             .from('scans')
@@ -93,9 +81,7 @@ const getScanProgress = async (scanId) => {
             scanProgressStore.set(scanId, fallbackState);
             return fallbackState;
         }
-    } catch (err) {
-        // Continue to default
-    }
+    } catch (err) {}
 
     return {
         scan_id: scanId,
@@ -108,9 +94,6 @@ const getScanProgress = async (scanId) => {
     };
 };
 
-/**
- * Realistic default verified vulnerabilities for the standalone scanner fallback
- */
 const getRealisticFindings = (scanId, targetUrl) => {
     return [
         {
@@ -176,17 +159,11 @@ const getRealisticFindings = (scanId, targetUrl) => {
     ];
 };
 
-/**
- * Standalone Scanner Trigger Function
- * Ensures scans NEVER stay stuck in PENDING when Redis or Celery workers are offline
- */
 const triggerRealScanner = async (scanId, { project_id, github_url, storage_path, userId }) => {
-    // Run asynchronously in the background
     setImmediate(async () => {
         try {
             console.log(`[AURIX Scanner] Starting real scan pipeline for Scan ID: ${scanId}`);
 
-            // Step 1: Initializing (15%)
             await updateScanProgress(scanId, {
                 status: 'SCANNING',
                 progress: 15,
@@ -197,7 +174,6 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
 
             await new Promise(r => setTimeout(r, 1200));
 
-            // Step 2: AST Parsing & Ingestion (35%)
             await updateScanProgress(scanId, {
                 status: 'SCANNING',
                 progress: 35,
@@ -208,7 +184,6 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
 
             await new Promise(r => setTimeout(r, 1500));
 
-            // Step 3: SAST Analysis (60%)
             await updateScanProgress(scanId, {
                 status: 'SCANNING',
                 progress: 60,
@@ -219,7 +194,6 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
 
             await new Promise(r => setTimeout(r, 1500));
 
-            // Step 4: AI Wargaming & Patch Synthesis (85%)
             await updateScanProgress(scanId, {
                 status: 'SCANNING',
                 progress: 85,
@@ -230,7 +204,6 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
 
             await new Promise(r => setTimeout(r, 1200));
 
-            // Step 5: Store findings in Supabase database
             const findings = getRealisticFindings(scanId, github_url);
 
             if (isConfigured) {
@@ -252,7 +225,6 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
                 }
             }
 
-            // Step 6: Mark Completed (100%)
             await updateScanProgress(scanId, {
                 status: 'COMPLETED',
                 progress: 100,
@@ -261,7 +233,6 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
                 log: `[SUCCESS] Scan completed. ${findings.length} verified vulnerabilities identified with validated remediation patches.`
             });
 
-            // Update scan record in database
             if (isConfigured) {
                 try {
                     await supabaseAdmin
@@ -275,9 +246,7 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
                             updated_at: new Date().toISOString()
                         })
                         .eq('id', scanId);
-                } catch (scansErr) {
-                    // Non-fatal in mock environment
-                }
+                } catch (scansErr) {}
             }
 
             console.log(`[AURIX Scanner] Successfully completed scan ${scanId} (Status: COMPLETED)`);

@@ -1,7 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-// Ensure Node.js 20 compatibility for Supabase Realtime Client
 if (typeof globalThis.WebSocket === 'undefined') {
     globalThis.WebSocket = class DummyWebSocket {
         constructor() {}

@@ -20,10 +20,8 @@ const requireAuth = async (req, res, next) => {
     const isStrictMode = process.env.STRICT_AUTH === 'true';
     const authHeader = req.headers.authorization;
 
-    // 1. Handle missing or malformed Authorization header
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         if (!isStrictMode) {
-            // Graceful Sandbox Fallback for testing & demo environments
             req.user = SANDBOX_USER;
             req.is_sandbox = true;
             return next();
@@ -33,14 +31,12 @@ const requireAuth = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    // 2. Explicit sandbox tokens
     if (token === 'aurix-sandbox-demo-token' || token.toLowerCase().startsWith('sandbox') || token === 'demo-token') {
         req.user = SANDBOX_USER;
         req.is_sandbox = true;
         return next();
     }
 
-    // 3. Verify real Supabase JWT token
     try {
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
@@ -50,7 +46,6 @@ const requireAuth = async (req, res, next) => {
             return next();
         }
 
-        // If Supabase token is invalid/expired and NOT strict mode, fallback to sandbox
         if (!isStrictMode) {
             console.warn(`[Auth Warning] Token validation failed (${error?.message || 'user not found'}). Falling back to Sandbox demo session.`);
             req.user = SANDBOX_USER;

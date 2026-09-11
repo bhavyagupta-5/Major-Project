@@ -4,9 +4,6 @@ const { supabase, supabaseAdmin, isConfigured } = require('../supabaseClient');
 const requireAuth = require('../middleware/auth');
 const { SANDBOX_USER } = require('../middleware/auth');
 
-/**
- * POST /api/auth/signup - User registration
- */
 router.post('/signup', async (req, res) => {
     try {
         const { email, password, full_name, role } = req.body;
@@ -39,7 +36,6 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: error.message });
         }
 
-        // Ensure public profile exists
         if (data.user) {
             try {
                 await supabaseAdmin
@@ -51,9 +47,7 @@ router.post('/signup', async (req, res) => {
                         role: role || 'auditor',
                         updated_at: new Date().toISOString()
                     });
-            } catch (pErr) {
-                // Non-blocking trigger fallback
-            }
+            } catch (pErr) {}
         }
 
         return res.status(201).json({
@@ -68,9 +62,6 @@ router.post('/signup', async (req, res) => {
     }
 });
 
-/**
- * POST /api/auth/login - Email/password login
- */
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -109,9 +100,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-/**
- * POST /api/auth/forgot-password - Send password recovery email
- */
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email, redirectTo } = req.body;
@@ -138,9 +126,6 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
-/**
- * POST /api/auth/reset-password - Password recovery update
- */
 router.post('/reset-password', async (req, res) => {
     try {
         const { password, access_token } = req.body;
@@ -149,7 +134,6 @@ router.post('/reset-password', async (req, res) => {
             return res.status(400).json({ error: 'New password is required' });
         }
 
-        // If access token is passed in header or body
         const authHeader = req.headers.authorization;
         const token = access_token || (authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
 
@@ -157,7 +141,6 @@ router.post('/reset-password', async (req, res) => {
             return res.status(401).json({ error: 'Missing recovery authorization token' });
         }
 
-        // Update password using Supabase Auth
         const { data: { user }, error: userError } = await supabase.auth.getUser(token);
         if (userError || !user) {
             return res.status(401).json({ error: 'Invalid or expired password reset token' });
@@ -178,9 +161,6 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
-/**
- * GET /api/auth/github - Returns/redirects to Supabase GitHub OAuth URL
- */
 router.get('/github', async (req, res) => {
     try {
         const redirectTo = req.query.redirectTo || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`;
@@ -213,9 +193,6 @@ router.get('/github', async (req, res) => {
     }
 });
 
-/**
- * POST /api/auth/sandbox - Generates a demo auditor session without signup
- */
 router.post('/sandbox', (req, res) => {
     return res.status(200).json({
         message: 'Sandbox demo auditor session generated successfully',
@@ -232,9 +209,6 @@ router.post('/sandbox', (req, res) => {
     });
 });
 
-/**
- * GET /api/auth/me - Fetches current user profile
- */
 router.get('/me', requireAuth, async (req, res) => {
     try {
         if (!isConfigured || req.is_sandbox || req.user.is_sandbox) {
@@ -251,7 +225,6 @@ router.get('/me', requireAuth, async (req, res) => {
             });
         }
 
-        // Fetch from Supabase profiles table
         const { data: profile, error } = await supabaseAdmin
             .from('profiles')
             .select('*')
@@ -274,9 +247,6 @@ router.get('/me', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * POST /api/auth/logout - Logs out the user
- */
 router.post('/logout', async (req, res) => {
     try {
         await supabase.auth.signOut();

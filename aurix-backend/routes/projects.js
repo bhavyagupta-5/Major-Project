@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const { supabaseAdmin, isConfigured } = require('../supabaseClient');
 const requireAuth = require('../middleware/auth');
 
-// In-memory cache for sandbox projects
 const sandboxProjectsStore = [
     {
         id: 'b05c8ef4-e03b-4186-934f-bd6e5a1a4f75',
@@ -26,14 +25,10 @@ const sandboxProjectsStore = [
     }
 ];
 
-/**
- * GET /api/projects - List user's projects
- */
 router.get('/', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // Fetch user's projects from Supabase if configured
         let projects = [];
         if (isConfigured) {
             try {
@@ -49,7 +44,6 @@ router.get('/', requireAuth, async (req, res) => {
             } catch (err) {}
         }
 
-        // If in sandbox mode or no projects in DB, provide sandbox projects
         if (req.is_sandbox || req.user.is_sandbox || projects.length === 0) {
             const userSandboxProjects = sandboxProjectsStore.filter(
                 p => p.user_id === userId || p.user_id === '00000000-0000-0000-0000-000000000001'
@@ -59,7 +53,6 @@ router.get('/', requireAuth, async (req, res) => {
             }
         }
 
-        // Format project statistics
         const formatted = projects.map(p => {
             const scans = p.scans || [];
             const latestScan = scans.length > 0 ? scans[0] : null;
@@ -80,9 +73,6 @@ router.get('/', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * POST /api/projects - Create a new project
- */
 router.post('/', requireAuth, async (req, res) => {
     try {
         const { name, repository_url } = req.body;
@@ -101,7 +91,6 @@ router.post('/', requireAuth, async (req, res) => {
             created_at: new Date().toISOString()
         };
 
-        // Try inserting into Supabase if configured
         let savedProject = null;
         if (isConfigured) {
             try {
@@ -121,7 +110,6 @@ router.post('/', requireAuth, async (req, res) => {
             }
         }
 
-        // If DB didn't save (e.g. sandbox foreign key or mock DB), store in sandboxProjectsStore
         if (!savedProject) {
             sandboxProjectsStore.unshift(newProject);
             savedProject = newProject;
