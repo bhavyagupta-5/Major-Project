@@ -1,0 +1,397 @@
+{
+  "info": {
+    "name": "AURIX Security Platform API",
+    "description": "Complete Postman collection for testing AURIX backend endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "scan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "finding_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.session && jsonData.session.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.session.access_token);",
+                  "    console.log('Access token saved to collection variable!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Profile (GET /me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Sandbox Fallback Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sandbox",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sandbox"]
+            }
+          }
+        },
+        {
+          "name": "GitHub OAuth URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/github",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "github"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('project_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Damn Small Vulnerable Web App\",\n  \"repository_url\": \"https://github.com/stamparm/DSVW\",\n  \"branch\": \"master\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "List Projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (Array.isArray(jsonData) && jsonData.length > 0 && !pm.collectionVariables.get('project_id')) {",
+                  "    pm.collectionVariables.set('project_id', jsonData[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Scans",
+      "item": [
+        {
+          "name": "Trigger Scan (POST /github)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.scan && jsonData.scan.id) {",
+                  "    pm.collectionVariables.set('scan_id', jsonData.scan.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"github_url\": \"https://github.com/stamparm/DSVW\",\n  \"project_id\": \"{{project_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/scans/github",
+              "host": ["{{base_url}}"],
+              "path": ["api", "scans", "github"]
+            }
+          }
+        },
+        {
+          "name": "Poll Scan Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/scans/{{scan_id}}/progress",
+              "host": ["{{base_url}}"],
+              "path": ["api", "scans", "{{scan_id}}", "progress"]
+            }
+          }
+        },
+        {
+          "name": "Get Scan Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/scans/{{scan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "scans", "{{scan_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Simulate Scan Webhook Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scan_id\": \"{{scan_id}}\",\n  \"progress\": 75,\n  \"step\": \"Running AI vulnerability verification\",\n  \"current_file\": \"dsvw.py\",\n  \"status\": \"SCANNING\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/internal/webhook/scan-progress",
+              "host": ["{{base_url}}"],
+              "path": ["api", "internal", "webhook", "scan-progress"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Findings",
+      "item": [
+        {
+          "name": "Get Active Findings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.findings && jsonData.findings.length > 0) {",
+                  "    pm.collectionVariables.set('finding_id', jsonData.findings[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/findings/active",
+              "host": ["{{base_url}}"],
+              "path": ["api", "findings", "active"]
+            }
+          }
+        },
+        {
+          "name": "Resolve Finding",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"resolved\",\n  \"resolution_note\": \"Fixed by parameterizing database queries\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/findings/{{finding_id}}/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "findings", "{{finding_id}}", "resolve"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Pull Requests (Auto-Remediation)",
+      "item": [
+        {
+          "name": "Create Pull Request for Finding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"finding_id\": \"{{finding_id}}\",\n  \"repo_url\": \"https://github.com/stamparm/DSVW\",\n  \"pr_title\": \"[AURIX Patch] Fix SQL Injection in Query Handler\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pr/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pr", "create"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
