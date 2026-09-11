@@ -21,28 +21,29 @@ router.post('/signup', async (req, res) => {
             });
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        const { data: adminData, error: adminError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
-            options: {
-                data: {
-                    full_name: full_name || email.split('@')[0],
-                    role: role || 'auditor'
-                }
+            email_confirm: true,
+            user_metadata: {
+                full_name: full_name || email.split('@')[0],
+                role: role || 'auditor'
             }
         });
 
-        if (error) {
-            return res.status(400).json({ error: error.message });
+        if (adminError) {
+            return res.status(400).json({ error: adminError.message });
         }
 
-        if (data.user) {
+        const createdUser = adminData.user;
+
+        if (createdUser) {
             try {
                 await supabaseAdmin
                     .from('profiles')
                     .upsert({
-                        id: data.user.id,
-                        email: data.user.email,
+                        id: createdUser.id,
+                        email: createdUser.email,
                         full_name: full_name || email.split('@')[0],
                         role: role || 'auditor',
                         updated_at: new Date().toISOString()
@@ -50,11 +51,21 @@ router.post('/signup', async (req, res) => {
             } catch (pErr) {}
         }
 
+        const { data: sessionData } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'magiclink',
+            email
+        });
+
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
         return res.status(201).json({
             message: 'Registration successful',
-            user: data.user,
-            session: data.session,
-            token: data.session?.access_token || null
+            user: createdUser,
+            session: loginData?.session || null,
+            token: loginData?.session?.access_token || null
         });
     } catch (err) {
         console.error('Signup error:', err);
