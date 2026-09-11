@@ -39,8 +39,6 @@ const updateScanProgress = async (scanId, { step, progress, current_file, log, s
             await supabaseAdmin
                 .from('scans')
                 .update({
-                    progress: updatedState.progress,
-                    current_step: updatedState.current_step,
                     status: updatedState.status,
                     updated_at: updatedState.updated_at
                 })
@@ -180,8 +178,6 @@ const triggerRealScanner = async (scanId, { project_id, github_url, storage_path
                             status: 'COMPLETED',
                             total_findings: findings.length,
                             neutralized_count: 0,
-                            progress: 100,
-                            current_step: 'Completed',
                             updated_at: new Date().toISOString()
                         })
                         .eq('id', scanId);

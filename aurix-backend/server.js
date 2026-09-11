@@ -195,8 +195,6 @@ app.post('/api/internal/webhook/scan-complete', async (req, res) => {
                     status,
                     total_findings: summary?.total_findings || (findings ? findings.length : 0),
                     neutralized_count: summary?.neutralized_count || 0,
-                    progress: 100,
-                    current_step: 'Completed',
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', scan_id);
