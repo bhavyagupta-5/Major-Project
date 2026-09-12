@@ -1,7 +1,7 @@
 const { supabase } = require('../supabaseClient');
 
 const SANDBOX_USER = {
-    id: '00000000-0000-0000-0000-000000000001',
+    id: 'bd85429f-232c-4671-9612-851c20cfb9dd',
     aud: 'authenticated',
     role: 'authenticated',
     email: 'sandbox.auditor@aurix.local',

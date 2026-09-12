@@ -7,7 +7,7 @@ const requireAuth = require('../middleware/auth');
 const sandboxProjectsStore = [
     {
         id: 'b05c8ef4-e03b-4186-934f-bd6e5a1a4f75',
-        user_id: '00000000-0000-0000-0000-000000000001',
+        user_id: 'bd85429f-232c-4671-9612-851c20cfb9dd',
         name: 'Damn Small Vulnerable Web App (DSVW)',
         repository_url: 'https://github.com/stamparm/DSVW',
         total_scans: 2,
@@ -16,7 +16,7 @@ const sandboxProjectsStore = [
     },
     {
         id: 'c12d3e4f-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
-        user_id: '00000000-0000-0000-0000-000000000001',
+        user_id: 'bd85429f-232c-4671-9612-851c20cfb9dd',
         name: 'NodeGoat OWASP Benchmark',
         repository_url: 'https://github.com/OWASP/NodeGoat',
         total_scans: 1,
