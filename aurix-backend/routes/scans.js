@@ -31,6 +31,34 @@ const scanRateLimiter = rateLimit({
     message: { error: 'Too many scan requests, please try again after an hour' }
 });
 
+// GET /api/scans — List all scans for the authenticated user
+router.get('/', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        if (!isConfigured) {
+            return res.status(200).json([]);
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('scans')
+            .select('id, status, progress, current_step, total_findings, neutralized_count, created_at, updated_at, project_id')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error('[Scans] Error fetching scan list:', error.message);
+            return res.status(500).json({ error: 'Failed to fetch scans' });
+        }
+
+        return res.status(200).json(data || []);
+    } catch (err) {
+        console.error('[Scans] Unexpected error in scan list:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
     try {
         const { github_url, project_id } = req.body;

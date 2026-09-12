@@ -24,15 +24,21 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = [
   process.env.CLIENT_URL || 'http://localhost:5173',
-  'https://renthour-ai.vercel.app' 
+  process.env.WEB_APP_URL || 'https://aurix-web.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
 ];
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Allow requests with no origin (VS Code extension, curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    // Allow VS Code webview origins
+    if (origin.startsWith('vscode-webview://')) return callback(null, true);
+    // Allow any origin in the whitelist
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    // Allow any origin in development
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
@@ -246,7 +252,7 @@ app.post('/api/internal/webhook/scan-complete', async (req, res) => {
             status: 'COMPLETED',
             progress: 100,
             step: 'Scan Completed',
-            log: `[WEBHOOK] AI Worker finalized scan. ${findings ? findings.length : 0} vulnerabilities verified.`
+            log: `[WEBHOOK] AI Worker finalized scan. ${summary?.exploitable_count || 0} exploitable found, ${summary?.neutralized_count || 0} neutralized.`
         });
 
         return res.status(200).json({ message: 'Webhook processed successfully' });

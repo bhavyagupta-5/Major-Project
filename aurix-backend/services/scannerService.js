@@ -40,6 +40,8 @@ const updateScanProgress = async (scanId, { step, progress, current_file, log, s
                 .from('scans')
                 .update({
                     status: updatedState.status,
+                    progress: updatedState.progress,
+                    current_step: updatedState.current_step,
                     updated_at: updatedState.updated_at
                 })
                 .eq('id', scanId);
