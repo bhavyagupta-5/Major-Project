@@ -9,8 +9,7 @@ const requireAuth = require('./middleware/auth');
 const {
     triggerRealScanner,
     updateScanProgress,
-    getScanProgress,
-    getRealisticFindings
+    getScanProgress
 } = require('./services/scannerService');
 
 const authRoutes = require('./routes/auth');
@@ -145,12 +144,23 @@ app.get('/', (req, res) => {
     `);
 });
 
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'ok',
+app.get('/health', async (req, res) => {
+    let redisStatus = 'not_configured';
+    if (redis) {
+        try {
+            const pong = await redis.ping();
+            redisStatus = pong === 'PONG' ? 'connected' : 'degraded';
+        } catch (err) {
+            redisStatus = `error: ${err.message}`;
+        }
+    }
+
+    const isHealthy = redisStatus === 'connected';
+    res.status(isHealthy ? 200 : 503).json({
+        status: isHealthy ? 'ok' : 'degraded',
         service: 'AURIX API Gateway',
         timestamp: new Date().toISOString(),
-        redis_connected: !!redis,
+        redis: redisStatus,
         database: 'Supabase PostgreSQL'
     });
 });

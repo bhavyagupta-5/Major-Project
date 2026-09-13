@@ -11,8 +11,7 @@ const requireAuth = require('../middleware/auth');
 const {
     triggerRealScanner,
     updateScanProgress,
-    getScanProgress,
-    getRealisticFindings
+    getScanProgress
 } = require('../services/scannerService');
 
 const upload = multer({
@@ -274,7 +273,10 @@ router.get('/:scan_id', requireAuth, async (req, res) => {
         }
 
         if (findings.length === 0 && status === 'COMPLETED') {
-            findings = getRealisticFindings(scanId);
+            // The AI worker writes findings directly to DB via the scan-complete webhook.
+            // If DB has 0 findings after COMPLETED, it means the scan genuinely found nothing
+            // (or the AI worker determined all findings were false positives).
+            // We do NOT fall back to mock data here.
         }
 
         const totalFindings = scan?.total_findings || findings.length;
