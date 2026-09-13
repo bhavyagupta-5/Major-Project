@@ -21,9 +21,16 @@ const prRoutes = require('./routes/pr');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// const allowedOrigins = [
+//   process.env.CLIENT_URL || 'http://localhost:5173',
+//   process.env.WEB_APP_URL || 'https://aurix-web.vercel.app',
+//   'http://localhost:3000',
+//   'http://localhost:5173',
+// ];
 const allowedOrigins = [
   process.env.CLIENT_URL || 'http://localhost:5173',
   process.env.WEB_APP_URL || 'https://aurix-web.vercel.app',
+  'https://aurix-4-0.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173',
 ];
