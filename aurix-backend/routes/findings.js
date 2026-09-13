@@ -2,13 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { supabaseAdmin, isConfigured } = require('../supabaseClient');
 const requireAuth = require('../middleware/auth');
-const { getRealisticFindings } = require('../services/scannerService');
 
-const sandboxFindings = getRealisticFindings('b05c8ef4-e03b-4186-934f-bd6e5a1a4f75', 'https://github.com/stamparm/DSVW').map((f, idx) => ({
-    ...f,
-    id: f.id || `finding-${idx + 1}-${Date.now()}`
-}));
-
+// GET /api/findings/active — all unresolved findings for the authenticated user
 router.get('/active', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -30,10 +25,6 @@ router.get('/active', requireAuth, async (req, res) => {
             }
         }
 
-        if (findings.length === 0) {
-            findings = sandboxFindings.filter(f => !f.is_resolved);
-        }
-
         return res.status(200).json({
             count: findings.length,
             findings: findings
@@ -44,6 +35,7 @@ router.get('/active', requireAuth, async (req, res) => {
     }
 });
 
+// PATCH /api/findings/:id/resolve — mark a finding as resolved
 router.patch('/:id/resolve', requireAuth, async (req, res) => {
     try {
         const findingId = req.params.id;
@@ -80,13 +72,6 @@ router.patch('/:id/resolve', requireAuth, async (req, res) => {
             }
         }
 
-        const memoryFinding = sandboxFindings.find(f => f.id === findingId || f.rule_id === findingId);
-        if (memoryFinding) {
-            memoryFinding.is_resolved = true;
-            memoryFinding.wargame_status = 'Neutralized';
-            updatedFinding = memoryFinding;
-        }
-
         return res.status(200).json({
             message: 'Finding marked as resolved',
             id: findingId,
@@ -100,4 +85,3 @@ router.patch('/:id/resolve', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
-module.exports.sandboxFindings = sandboxFindings;
