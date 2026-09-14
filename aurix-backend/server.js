@@ -19,7 +19,7 @@ const findingsRoutes = require('./routes/findings');
 const prRoutes = require('./routes/pr');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // const allowedOrigins = [
 //   process.env.CLIENT_URL || 'http://localhost:5173',
@@ -28,25 +28,25 @@ const PORT = process.env.PORT || 3000;
 //   'http://localhost:5173',
 // ];
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  process.env.WEB_APP_URL || 'https://aurix-web.vercel.app',
-  'https://aurix-4-0.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173',
+    process.env.CLIENT_URL || 'http://localhost:5173',
+    process.env.WEB_APP_URL || 'https://aurix-web.vercel.app',
+    'https://aurix-4-0.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173',
 ];
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (VS Code extension, curl, Postman, server-to-server)
-    if (!origin) return callback(null, true);
-    // Allow VS Code webview origins
-    if (origin.startsWith('vscode-webview://')) return callback(null, true);
-    // Allow any origin in the whitelist
-    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
-    // Allow any origin in development
-    if (process.env.NODE_ENV !== 'production') return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (VS Code extension, curl, Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        // Allow VS Code webview origins
+        if (origin.startsWith('vscode-webview://')) return callback(null, true);
+        // Allow any origin in the whitelist
+        if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+        // Allow any origin in development
+        if (process.env.NODE_ENV !== 'production') return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -224,11 +224,11 @@ app.post('/api/internal/webhook/scan-complete', async (req, res) => {
         }
 
         const status = (findings && findings.length >= 0) ? 'COMPLETED' : 'FAILED';
-        
+
         try {
             await supabaseAdmin
                 .from('scans')
-                .update({ 
+                .update({
                     status,
                     total_findings: summary?.total_findings || (findings ? findings.length : 0),
                     neutralized_count: summary?.neutralized_count || 0,
