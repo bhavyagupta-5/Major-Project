@@ -127,4 +127,23 @@ router.patch('/:id/resolve', requireAuth, async (req, res) => {
     }
 });
 
+const sandboxFindings = [
+    {
+        id: 'finding-shell-0',
+        rule_id: 'spawn-shell-true',
+        title: 'Command Injection via spawn with shell: true',
+        description: 'Vulnerable child process invocation allows shell escape and remote command execution.',
+        severity: 'HIGH',
+        cvss: 8.0,
+        file_path: 'worker/worker.js',
+        line_number: 12,
+        evidence: "const child = spawn(command, { shell: true, stdio: 'pipe' });",
+        patch_code: "- const child = spawn(command, { shell: true, stdio: 'pipe' });\n+ const child = spawn(command, [], { shell: false, stdio: 'pipe' });",
+        ai_reasoning: 'Red Agent successfully demonstrated arbitrary code execution via shell metacharacters.',
+        is_resolved: false
+    }
+];
+
+router.sandboxFindings = sandboxFindings;
 module.exports = router;
+module.exports.sandboxFindings = sandboxFindings;
