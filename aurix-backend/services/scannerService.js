@@ -40,8 +40,6 @@ const updateScanProgress = async (scanId, { step, progress, current_file, log, s
                 .from('scans')
                 .update({
                     status: updatedState.status,
-                    progress: updatedState.progress,
-                    current_step: updatedState.current_step,
                     updated_at: updatedState.updated_at
                 })
                 .eq('id', scanId);
@@ -55,10 +53,46 @@ const updateScanProgress = async (scanId, { step, progress, current_file, log, s
 
 const getScanProgress = async (scanId) => {
     if (scanProgressStore.has(scanId)) {
+        const state = scanProgressStore.get(scanId);
+        if (state.status !== 'COMPLETED' && state.status !== 'FAILED' && isConfigured) {
+            try {
+                const { data: scan } = await supabaseAdmin
+                    .from('scans')
+                    .select('*')
+                    .eq('id', scanId)
+                    .single();
+
+                if (scan && (scan.status === 'COMPLETED' || scan.status === 'FAILED')) {
+                    state.status = scan.status;
+                    state.progress = scan.status === 'COMPLETED' ? 100 : state.progress;
+                    state.total_findings = scan.total_findings || 0;
+                    state.current_step = scan.status === 'COMPLETED' ? 'Scan Completed' : 'Failed';
+                    scanProgressStore.set(scanId, state);
+                } else {
+                    const { count } = await supabaseAdmin
+                        .from('verified_vulnerabilities')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('scan_id', scanId);
+
+                    if (count && count > 0) {
+                        state.status = 'COMPLETED';
+                        state.progress = 100;
+                        state.total_findings = count;
+                        state.current_step = 'Scan Completed';
+                        scanProgressStore.set(scanId, state);
+
+                        await supabaseAdmin
+                            .from('scans')
+                            .update({ status: 'COMPLETED', total_findings: count, updated_at: new Date().toISOString() })
+                            .eq('id', scanId);
+                    }
+                }
+            } catch (err) {}
+        }
         return scanProgressStore.get(scanId);
     }
 
-    // Fallback: pull state from Supabase DB (e.g. after a server restart on Render)
+    // Fallback: pull state from Supabase DB (e.g. after a server restart or external worker run)
     if (isConfigured) {
         try {
             const { data: scan } = await supabaseAdmin
@@ -67,27 +101,36 @@ const getScanProgress = async (scanId) => {
                 .eq('id', scanId)
                 .single();
 
-            if (scan) {
+            let totalCount = scan?.total_findings || 0;
+            if (!totalCount) {
+                const { count } = await supabaseAdmin
+                    .from('verified_vulnerabilities')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('scan_id', scanId);
+                if (count) totalCount = count;
+            }
+
+            if (scan || totalCount > 0) {
+                const status = (scan?.status === 'COMPLETED' || totalCount > 0) ? 'COMPLETED' : (scan?.status || 'PENDING');
                 const fallbackState = {
                     scan_id: scanId,
-                    status: scan.status,
-                    progress: scan.status === 'COMPLETED' ? 100 : (scan.progress || 0),
-                    current_step: scan.current_step || (scan.status === 'COMPLETED' ? 'Scan Completed' : 'Queued – waiting for AI worker'),
+                    status: status,
+                    progress: status === 'COMPLETED' ? 100 : 0,
+                    total_findings: totalCount,
+                    current_step: status === 'COMPLETED' ? 'Scan Completed' : 'Queued – waiting for AI worker',
                     current_file: '',
                     logs: [
                         {
-                            timestamp: scan.created_at,
-                            message: `[AURIX] Scan record found in database. Status: ${scan.status}`
+                            timestamp: scan?.created_at || new Date().toISOString(),
+                            message: `[AURIX] Scan record found in database. Status: ${status}`
                         }
                     ],
-                    updated_at: scan.updated_at
+                    updated_at: scan?.updated_at || new Date().toISOString()
                 };
                 scanProgressStore.set(scanId, fallbackState);
                 return fallbackState;
             }
-        } catch (err) {
-            // Supabase unavailable – return unknown state
-        }
+        } catch (err) {}
     }
 
     return {

@@ -16,7 +16,7 @@ const {
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }
+    limits: { fileSize: 200 * 1024 * 1024 } // 200MB file size limit
 });
 
 const scanRateLimiter = rateLimit({
@@ -39,19 +39,31 @@ router.get('/', requireAuth, async (req, res) => {
             return res.status(200).json([]);
         }
 
-        const { data, error } = await supabaseAdmin
+        let { data, error } = await supabaseAdmin
             .from('scans')
-            .select('id, status, progress, current_step, total_findings, neutralized_count, created_at, updated_at, project_id')
+            .select('id, status, total_findings, neutralized_count, created_at, updated_at, project_id')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(20);
+            .limit(30);
 
-        if (error) {
-            console.error('[Scans] Error fetching scan list:', error.message);
-            return res.status(500).json({ error: 'Failed to fetch scans' });
+        if (error || !data || data.length === 0) {
+            const fallbackRes = await supabaseAdmin
+                .from('scans')
+                .select('id, status, total_findings, neutralized_count, created_at, updated_at, project_id')
+                .order('created_at', { ascending: false })
+                .limit(30);
+            if (!fallbackRes.error && fallbackRes.data) {
+                data = fallbackRes.data;
+            }
         }
 
-        return res.status(200).json(data || []);
+        const formatted = (data || []).map(s => ({
+            ...s,
+            progress: s.status === 'COMPLETED' ? 100 : 0,
+            current_step: s.status === 'COMPLETED' ? 'Scan Completed' : 'Processing'
+        }));
+
+        return res.status(200).json(formatted);
     } catch (err) {
         console.error('[Scans] Unexpected error in scan list:', err);
         return res.status(500).json({ error: 'Internal server error' });
@@ -138,28 +150,92 @@ router.post('/github', requireAuth, scanRateLimiter, async (req, res) => {
     }
 });
 
-router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'), async (req, res) => {
+router.post('/upload', requireAuth, scanRateLimiter, (req, res, next) => {
+    upload.single('source_code')(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: 'File size exceeds the 200MB limit. Please upload a smaller zip package.' });
+            }
+            return res.status(400).json({ error: `Upload error: ${err.message}` });
+        } else if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
     try {
         const file = req.file;
-        const { project_id } = req.body;
+        let { project_id } = req.body;
         const userId = req.user.id;
 
-        if (!file || !project_id) {
-            return res.status(400).json({ error: 'Missing source_code zip file or project_id' });
+        if (!file) {
+            return res.status(400).json({ error: 'Missing source_code zip file in upload request' });
         }
 
         const scanId = crypto.randomUUID();
         const filePath = `${userId}/${scanId}.zip`;
 
         try {
-            await supabaseAdmin
+            // Ensure bucket exists and is marked public
+            const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+            const exists = buckets?.some(b => b.name === 'scan-payloads');
+            if (!exists) {
+                await supabaseAdmin.storage.createBucket('scan-payloads', { public: true });
+            }
+
+            const { error: upErr } = await supabaseAdmin
                 .storage
                 .from('scan-payloads')
                 .upload(filePath, file.buffer, {
-                    contentType: 'application/zip'
+                    contentType: 'application/zip',
+                    upsert: true
                 });
+
+            if (upErr) {
+                console.error('[Storage Upload Error]:', upErr.message);
+            }
         } catch (storageErr) {
-            console.warn('[Storage] Upload note (sandbox/mock fallback):', storageErr.message);
+            console.warn('[Storage] Upload note:', storageErr.message);
+        }
+
+        // Generate a 24-hour signed download URL for external AI worker access
+        let cleanDownloadUrl = null;
+        try {
+            const { data: signedData, error: signErr } = await supabaseAdmin
+                .storage
+                .from('scan-payloads')
+                .createSignedUrl(filePath, 60 * 60 * 24);
+            if (!signErr && signedData?.signedUrl) {
+                cleanDownloadUrl = signedData.signedUrl;
+            }
+        } catch (signErr) {
+            console.warn('[Storage] Signed URL generation notice:', signErr.message);
+        }
+
+        if (!cleanDownloadUrl) {
+            const backendBaseUrl = process.env.SERVER_URL || process.env.BACKEND_URL || (process.env.PORT ? `http://localhost:${process.env.PORT}` : 'http://localhost:8000');
+            cleanDownloadUrl = `${backendBaseUrl}/api/scans/download/${scanId}.zip`;
+        }
+
+        // Auto-resolve or create project if not provided
+        if (!project_id && isConfigured) {
+            try {
+                const projectName = file.originalname.replace(/\.zip$/i, '') || 'Uploaded Project';
+                const { data: newProj, error: projErr } = await supabaseAdmin
+                    .from('projects')
+                    .insert([{
+                        user_id: userId,
+                        name: projectName,
+                        repository_url: cleanDownloadUrl
+                    }])
+                    .select()
+                    .single();
+                if (!projErr && newProj?.id) {
+                    project_id = newProj.id;
+                }
+            } catch (pErr) {
+                console.warn('[Upload] Project auto-creation notice:', pErr.message);
+            }
         }
 
         let scan = { id: scanId, project_id, user_id: userId, status: 'PENDING', storage_path: filePath };
@@ -171,7 +247,9 @@ router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'
                 .single();
 
             if (dbScan) scan = dbScan;
-        } catch (dbErr) {}
+        } catch (dbErr) {
+            console.warn('[Scans] Note: DB insert notice for zip scan:', dbErr.message);
+        }
 
         await updateScanProgress(scanId, {
             status: 'PENDING',
@@ -187,12 +265,17 @@ router.post('/upload', requireAuth, scanRateLimiter, upload.single('source_code'
                 const jobPayload = {
                     scan_id: scan.id,
                     storage_path: filePath,
+                    download_url: cleanDownloadUrl,
+                    url: cleanDownloadUrl,
                     project_id,
                     user_id: userId
                 };
                 await redis.lpush('aurix_scan_queue', JSON.stringify(jobPayload));
                 pushedToRedis = true;
-            } catch (rErr) {}
+                console.log(`[Queue] Zip scan ${scan.id} pushed to Redis aurix_scan_queue with clean URL: ${cleanDownloadUrl}`);
+            } catch (rErr) {
+                console.warn('[Queue] Redis push failed for zip scan, falling back to triggerRealScanner:', rErr.message);
+            }
         }
 
         if (!pushedToRedis) {
@@ -225,6 +308,48 @@ router.get('/:scan_id/progress', async (req, res) => {
     } catch (err) {
         console.error('Error fetching scan progress:', err);
         return res.status(500).json({ error: 'Internal server error fetching scan progress' });
+    }
+});
+
+// GET /api/scans/download/:file_name — Clean streaming endpoint for AI worker zip ingestion
+router.get('/download/:file_name', async (req, res) => {
+    try {
+        const fileName = req.params.file_name.replace(/\.zip$/i, '');
+        const scanId = fileName;
+
+        let storagePath = null;
+        if (isConfigured) {
+            const { data: scan } = await supabaseAdmin
+                .from('scans')
+                .select('storage_path, user_id')
+                .eq('id', scanId)
+                .single();
+            if (scan?.storage_path) {
+                storagePath = scan.storage_path;
+            }
+        }
+
+        if (!storagePath) {
+            return res.status(404).json({ error: 'Scan zip file payload not found' });
+        }
+
+        const { data: blob, error } = await supabaseAdmin
+            .storage
+            .from('scan-payloads')
+            .download(storagePath);
+
+        if (error || !blob) {
+            return res.status(404).json({ error: 'Could not download zip payload from storage' });
+        }
+
+        const buffer = Buffer.from(await blob.arrayBuffer());
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${scanId}.zip"`);
+        return res.send(buffer);
+
+    } catch (err) {
+        console.error('[Download Proxy] Error serving zip file:', err.message);
+        return res.status(500).json({ error: 'Internal server error downloading zip payload' });
     }
 });
 
