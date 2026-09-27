@@ -3,30 +3,47 @@ const router = express.Router();
 const { supabaseAdmin, isConfigured } = require('../supabaseClient');
 const requireAuth = require('../middleware/auth');
 
-// GET /api/findings/active — all unresolved findings for the authenticated user or for a specific scan
+// GET /api/findings/active — all unresolved findings for the authenticated user, or for a specific scan / project
 router.get('/active', requireAuth, async (req, res) => {
     try {
         const userId = req.user?.id;
         const scanId = req.query.scan_id;
+        const projectId = req.query.project_id;
+        const ruleId = req.query.rule_id;
 
         let findings = [];
         if (isConfigured) {
             try {
                 if (scanId) {
-                    const { data, error } = await supabaseAdmin
+                    let q = supabaseAdmin
                         .from('verified_vulnerabilities')
                         .select('*')
                         .eq('scan_id', scanId);
+                    if (ruleId) q = q.eq('rule_id', ruleId);
+                    const { data, error } = await q;
+
+                    if (!error && data && data.length > 0) {
+                        findings = data;
+                    }
+                } else if (projectId) {
+                    let q = supabaseAdmin
+                        .from('verified_vulnerabilities')
+                        .select('*, scans!inner(user_id, project_id)')
+                        .eq('scans.project_id', projectId);
+                    if (ruleId) q = q.eq('rule_id', ruleId);
+                    const { data, error } = await q;
 
                     if (!error && data && data.length > 0) {
                         findings = data;
                     }
                 } else {
-                    const { data, error } = await supabaseAdmin
+                    let q = supabaseAdmin
                         .from('verified_vulnerabilities')
                         .select('*, scans!inner(user_id, project_id)')
                         .eq('scans.user_id', userId)
                         .eq('is_resolved', false);
+                    if (ruleId) q = q.eq('rule_id', ruleId);
+                    const { data, error } = await q;
 
                     if (!error && data && data.length > 0) {
                         findings = data;
@@ -35,6 +52,10 @@ router.get('/active', requireAuth, async (req, res) => {
             } catch (dbErr) {
                 console.warn('[Findings] Active query notice:', dbErr.message);
             }
+        }
+
+        if (findings.length === 0 && (req.is_sandbox || !isConfigured)) {
+            findings = sandboxFindings;
         }
 
         return res.status(200).json({
@@ -75,6 +96,74 @@ router.get('/scan/:scanId', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Fetch scan findings error:', err);
         return res.status(500).json({ error: 'Internal server error fetching scan findings' });
+    }
+});
+
+// GET /api/findings/project/:projectId — fetch all findings for a specific project
+router.get('/project/:projectId', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        let findings = [];
+        if (isConfigured) {
+            try {
+                const { data, error } = await supabaseAdmin
+                    .from('verified_vulnerabilities')
+                    .select('*, scans!inner(project_id, user_id)')
+                    .eq('scans.project_id', projectId);
+
+                if (!error && data && data.length > 0) {
+                    findings = data;
+                }
+            } catch (dbErr) {
+                console.warn('[Findings] Project query notice:', dbErr.message);
+            }
+        }
+
+        if (findings.length === 0 && (req.is_sandbox || !isConfigured)) {
+            findings = sandboxFindings;
+        }
+
+        return res.status(200).json({
+            project_id: projectId,
+            count: findings.length,
+            findings
+        });
+    } catch (err) {
+        console.error('Fetch project findings error:', err);
+        return res.status(500).json({ error: 'Internal server error fetching project findings' });
+    }
+});
+
+// GET /api/findings/:id — fetch finding by ID (returns ai_reasoning, poc_script, patch_code, etc.)
+router.get('/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (isConfigured) {
+            try {
+                const { data, error } = await supabaseAdmin
+                    .from('verified_vulnerabilities')
+                    .select('*')
+                    .or(`id.eq.${id},rule_id.eq.${id}`)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (!error && data) {
+                    return res.status(200).json(data);
+                }
+            } catch (dbErr) {
+                console.warn('[Findings] Single finding query notice:', dbErr.message);
+            }
+        }
+
+        const fallback = sandboxFindings.find(f => f.id === id || f.rule_id === id);
+        if (fallback) {
+            return res.status(200).json(fallback);
+        }
+
+        return res.status(404).json({ error: 'Finding not found' });
+    } catch (err) {
+        console.error('Fetch single finding error:', err);
+        return res.status(500).json({ error: 'Internal server error fetching single finding' });
     }
 });
 

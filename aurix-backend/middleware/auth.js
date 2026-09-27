@@ -16,6 +16,9 @@ const SANDBOX_USER = {
     is_sandbox: true
 };
 
+let lastWarnTime = 0;
+let lastWarnToken = '';
+
 const requireAuth = async (req, res, next) => {
     const isStrictMode = process.env.STRICT_AUTH === 'true';
     const authHeader = req.headers.authorization;
@@ -47,7 +50,12 @@ const requireAuth = async (req, res, next) => {
         }
 
         if (!isStrictMode) {
-            console.warn(`[Auth Warning] Token validation failed (${error?.message || 'user not found'}). Falling back to Sandbox demo session.`);
+            const now = Date.now();
+            if (now - lastWarnTime > 60000 || lastWarnToken !== token) {
+                console.warn(`[Auth Warning] Token validation notice (${error?.message || 'user not found'}). Using Sandbox demo session.`);
+                lastWarnTime = now;
+                lastWarnToken = token;
+            }
             req.user = SANDBOX_USER;
             req.is_sandbox = true;
             return next();

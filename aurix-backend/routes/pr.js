@@ -112,9 +112,9 @@ router.post('/create', requireAuth, async (req, res) => {
         ].join('\n');
 
         // 3. Resolve GitHub token
-        const rawToken = github_token 
-            || req.headers['x-github-token'] 
-            || req.headers['github-token'] 
+        const rawToken = github_token
+            || req.headers['x-github-token']
+            || req.headers['github-token']
             || req.user?.user_metadata?.provider_token
             || process.env.GITHUB_TOKEN;
 
@@ -125,6 +125,22 @@ router.post('/create', requireAuth, async (req, res) => {
         // 4. If token is provided, perform live GitHub API operations
         if (token) {
             try {
+                // Get authenticated user login
+                let authUserLogin = null;
+                try {
+                    const userCheck = await fetch('https://api.github.com/user', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'User-Agent': 'AURIX-Security-Agent'
+                        }
+                    });
+                    if (userCheck.ok) {
+                        const uData = await userCheck.json();
+                        authUserLogin = uData.login;
+                    }
+                } catch (e) { }
+
                 // Verify repository access
                 const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
                     headers: {
@@ -141,91 +157,153 @@ router.post('/create', requireAuth, async (req, res) => {
                     });
                 }
 
-                if (!repoResp.ok) {
-                    const errData = await repoResp.json().catch(() => ({}));
-                    console.warn(`[GitHub PR] Repository check failed (${repoResp.status}):`, errData.message);
-                    if (repoResp.status === 404 || repoResp.status === 403) {
-                        return res.status(repoResp.status).json({
-                            requiresGitHubLogin: true,
-                            error: `Repository ${owner}/${repo} was not found or your GitHub token lacks write access.`
-                        });
-                    }
-                } else {
-                    const repoData = await repoResp.json();
-                    const defaultBranch = repoData.default_branch || 'main';
+                let repoData = null;
+                let defaultBranch = 'main';
+                let canPushDirectly = false;
 
-                    // Get base branch SHA
-                    const refResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${defaultBranch}`, {
+                if (repoResp.ok) {
+                    repoData = await repoResp.json();
+                    defaultBranch = repoData.default_branch || 'main';
+                    canPushDirectly = repoData.permissions?.push === true || (authUserLogin && repoData.owner?.login?.toLowerCase() === authUserLogin.toLowerCase());
+                }
+
+                // If user cannot push directly (e.g. repo belongs to another user), fork the repository so any account can open a PR!
+                let pushOwner = owner;
+                let isForkWorkflow = false;
+
+                if (!canPushDirectly && authUserLogin && repoResp.ok) {
+                    try {
+                        console.log(`[GitHub PR] User ${authUserLogin} lacks direct push access to ${owner}/${repo}. Initiating automated fork...`);
+                        const forkResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/forks`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/vnd.github.v3+json',
+                                'User-Agent': 'AURIX-Security-Agent'
+                            }
+                        });
+
+                        if (forkResp.ok || forkResp.status === 202) {
+                            pushOwner = authUserLogin;
+                            isForkWorkflow = true;
+                            // Allow GitHub to provision the fork
+                            await new Promise(r => setTimeout(r, 1500));
+                        }
+                    } catch (fErr) {
+                        console.warn('[GitHub PR] Fork creation notice:', fErr.message);
+                    }
+                }
+
+                // If repository was 404/403 to this user, check if user has their own repo with this name
+                if (!repoResp.ok && authUserLogin) {
+                    try {
+                        const ownRepoResp = await fetch(`https://api.github.com/repos/${authUserLogin}/${repo}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/vnd.github.v3+json',
+                                'User-Agent': 'AURIX-Security-Agent'
+                            }
+                        });
+                        if (ownRepoResp.ok) {
+                            repoData = await ownRepoResp.json();
+                            defaultBranch = repoData.default_branch || 'main';
+                            pushOwner = authUserLogin;
+                            canPushDirectly = true;
+                        }
+                    } catch (oErr) { }
+                }
+
+                // Get base branch SHA
+                let baseSha = null;
+                const refResp = await fetch(`https://api.github.com/repos/${pushOwner}/${repo}/git/ref/heads/${defaultBranch}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'User-Agent': 'AURIX-Security-Agent'
+                    }
+                });
+
+                if (refResp.ok) {
+                    const refData = await refResp.json();
+                    baseSha = refData.object?.sha;
+                } else if (isForkWorkflow) {
+                    const upstreamRef = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${defaultBranch}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Accept': 'application/vnd.github.v3+json',
                             'User-Agent': 'AURIX-Security-Agent'
                         }
                     });
+                    if (upstreamRef.ok) {
+                        const uData = await upstreamRef.json();
+                        baseSha = uData.object?.sha;
+                    }
+                }
 
-                    if (refResp.ok) {
-                        const refData = await refResp.json();
-                        const baseSha = refData.object.sha;
+                if (baseSha) {
+                    // Create new branch
+                    const createBranchResp = await fetch(`https://api.github.com/repos/${pushOwner}/${repo}/git/refs`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json',
+                            'User-Agent': 'AURIX-Security-Agent'
+                        },
+                        body: JSON.stringify({
+                            ref: `refs/heads/${patchBranch}`,
+                            sha: baseSha
+                        })
+                    });
 
-                        // Create new branch
-                        const createBranchResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
-                            method: 'POST',
+                    const branchCreated = createBranchResp.ok || createBranchResp.status === 422;
+
+                    if (branchCreated) {
+                        // Check existing file SHA on patch branch to update or create
+                        const normalizedPath = targetFile.replace(/^\/+/, '');
+                        let existingSha = null;
+
+                        try {
+                            const fileCheck = await fetch(`https://api.github.com/repos/${pushOwner}/${repo}/contents/${normalizedPath}?ref=${patchBranch}`, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Accept': 'application/vnd.github.v3+json',
+                                    'User-Agent': 'AURIX-Security-Agent'
+                                }
+                            });
+                            if (fileCheck.ok) {
+                                const fileData = await fileCheck.json();
+                                existingSha = fileData.sha;
+                            }
+                        } catch (e) { }
+
+                        // Commit the patched code to the branch
+                        const commitPayload = {
+                            message: `fix(security): remediate ${targetTitle} [AURIX AI]`,
+                            content: Buffer.from(targetPatch).toString('base64'),
+                            branch: patchBranch
+                        };
+                        if (existingSha) {
+                            commitPayload.sha = existingSha;
+                        }
+
+                        const commitResp = await fetch(`https://api.github.com/repos/${pushOwner}/${repo}/contents/${normalizedPath}`, {
+                            method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Accept': 'application/vnd.github.v3+json',
                                 'Content-Type': 'application/json',
                                 'User-Agent': 'AURIX-Security-Agent'
                             },
-                            body: JSON.stringify({
-                                ref: `refs/heads/${patchBranch}`,
-                                sha: baseSha
-                            })
+                            body: JSON.stringify(commitPayload)
                         });
 
-                        const branchCreated = createBranchResp.ok || createBranchResp.status === 422;
+                        if (commitResp.ok) {
+                            // Determine PR target: if fork workflow, target upstream owner/repo with head authUserLogin:branch
+                            const prTargetOwner = isForkWorkflow ? owner : pushOwner;
+                            const prHead = isForkWorkflow ? `${authUserLogin}:${patchBranch}` : patchBranch;
 
-                        if (branchCreated) {
-                            // Check existing file SHA on patch branch to update or create
-                            const normalizedPath = targetFile.replace(/^\/+/, '');
-                            let existingSha = null;
-
-                            try {
-                                const fileCheck = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${normalizedPath}?ref=${patchBranch}`, {
-                                    headers: {
-                                        'Authorization': `Bearer ${token}`,
-                                        'Accept': 'application/vnd.github.v3+json',
-                                        'User-Agent': 'AURIX-Security-Agent'
-                                    }
-                                });
-                                if (fileCheck.ok) {
-                                    const fileData = await fileCheck.json();
-                                    existingSha = fileData.sha;
-                                }
-                            } catch (e) {}
-
-                            // Commit the patched code to the new branch
-                            const commitPayload = {
-                                message: `fix(security): remediate ${targetTitle} [AURIX AI]`,
-                                content: Buffer.from(targetPatch).toString('base64'),
-                                branch: patchBranch
-                            };
-                            if (existingSha) {
-                                commitPayload.sha = existingSha;
-                            }
-
-                            await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${normalizedPath}`, {
-                                method: 'PUT',
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Accept': 'application/vnd.github.v3+json',
-                                    'Content-Type': 'application/json',
-                                    'User-Agent': 'AURIX-Security-Agent'
-                                },
-                                body: JSON.stringify(commitPayload)
-                            });
-
-                            // Create the Pull Request
-                            const prResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
+                            let prResp = await fetch(`https://api.github.com/repos/${prTargetOwner}/${repo}/pulls`, {
                                 method: 'POST',
                                 headers: {
                                     'Authorization': `Bearer ${token}`,
@@ -235,11 +313,30 @@ router.post('/create', requireAuth, async (req, res) => {
                                 },
                                 body: JSON.stringify({
                                     title,
-                                    head: patchBranch,
+                                    head: prHead,
                                     base: defaultBranch,
                                     body
                                 })
                             });
+
+                            // If creating PR against upstream failed, fallback to creating PR on the fork itself
+                            if (!prResp.ok && isForkWorkflow) {
+                                prResp = await fetch(`https://api.github.com/repos/${pushOwner}/${repo}/pulls`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Accept': 'application/vnd.github.v3+json',
+                                        'Content-Type': 'application/json',
+                                        'User-Agent': 'AURIX-Security-Agent'
+                                    },
+                                    body: JSON.stringify({
+                                        title,
+                                        head: patchBranch,
+                                        base: defaultBranch,
+                                        body
+                                    })
+                                });
+                            }
 
                             if (prResp.ok) {
                                 const prData = await prResp.json();
@@ -250,7 +347,7 @@ router.post('/create', requireAuth, async (req, res) => {
                                             .from('verified_vulnerabilities')
                                             .update({ pr_url: prData.html_url })
                                             .eq('id', finding_id);
-                                    } catch (e) {}
+                                    } catch (e) { }
                                 }
 
                                 return res.status(201).json({
@@ -263,13 +360,13 @@ router.post('/create', requireAuth, async (req, res) => {
                                 });
                             } else {
                                 const prErrData = await prResp.json().catch(() => ({}));
-                                console.warn('[GitHub PR] POST /pulls error notice:', prErrData.message);
+                                console.warn('[GitHub PR] POST /pulls notice:', prErrData.message);
                             }
                         }
                     }
                 }
             } catch (githubErr) {
-                console.warn('[GitHub PR] Live API call notice (falling back to generated preview):', githubErr.message);
+                console.warn('[GitHub PR] Live API call notice (falling back to preview):', githubErr.message);
             }
         }
 
@@ -284,7 +381,7 @@ router.post('/create', requireAuth, async (req, res) => {
                     .from('verified_vulnerabilities')
                     .update({ pr_url: prUrl })
                     .eq('id', finding_id);
-            } catch (e) {}
+            } catch (e) { }
         }
 
         if (finding) {
